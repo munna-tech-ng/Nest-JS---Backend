@@ -6,10 +6,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
+    .setTitle('Enova Auth Module')
+    .setDescription('The Enova Auth Module API description')
     .setVersion('1.0')
-    .addTag('cats')
     .build();
   const documentFactory = (): OpenAPIObject => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);

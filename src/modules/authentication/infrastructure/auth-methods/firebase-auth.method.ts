@@ -52,8 +52,10 @@ export class FirebaseAuthMethod implements AuthMethodPort {
             throw new Error("User with this email already exists");
         }
 
+        const userName = firebaseUser.name ?? "User";
+
         // Create new user
-        const user = new AuthUser(randomUUID(), email, false, "firebase");
+        const user = new AuthUser(randomUUID(), email, userName, false, null, "firebase");
         // Firebase handles authentication, so no password hash needed
         await this.users.save(user, null);
 

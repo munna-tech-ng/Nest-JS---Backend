@@ -20,7 +20,7 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
       where: eq(schema.user.email, email.value),
     });
     if (!row) return null;
-    return new AuthUser((row.id).toString(), email, false, "email");
+    return new AuthUser((row.id).toString(), email, row.name, false, row.code, "email");
   }
 
   async getPasswordHashByEmail(email: Email): Promise<string | null> {
@@ -35,7 +35,7 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
       where: eq(schema.user.id, Number(id)),
     });
     if (!row) return null;
-    return new AuthUser((row.id).toString(), Email.create(row.email), false, "email");
+    return new AuthUser((row.id).toString(), Email.create(row.email), row.name, true, row.code, "email");
   }
 
   async findByCode(code: string): Promise<AuthUser | null> {
@@ -43,17 +43,15 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
         where: eq(schema.user.code, code),
       });
       if (!row) return null;
-      return new AuthUser((row.id).toString(), Email.create(row.email), false, "code");
+      return new AuthUser((row.id).toString(), Email.create(row.email), row.name, false, row.code, "code");
   }
   
   async save(user: AuthUser, passwordHash?: string | null): Promise<void> {
     await this.db.insert(schema.user).values({
-      id: Number(user.id),
+      name: user.name,
       email: user.email?.value as string,
       password: passwordHash ?? "",
-      name: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      code: user.code ?? "",
     });
   }
 }

@@ -21,16 +21,16 @@ export class EmailAuthMethod implements AuthMethodPort {
         const user: AuthUser | null = await this.users.findByEmail(email);
         if (!user) throw new Error("Invalid credentials");
 
-        const passwordHash: string | null = await this.users.getPasswordHashByEmail(email);
+        const passwordHash: string = await this.users.getPasswordHashByEmail(email) as string;
         if (!passwordHash) throw new Error("Invalid credentials");
 
-        const passwordOk: boolean = await compare(payload.password, passwordHash);
+        const passwordOk: boolean = await compare((payload.password).toString(), passwordHash);
         if (!passwordOk) throw new Error("Invalid credentials");
 
         return user;
     }
 
-    async register(payload: { email: string; password: string }): Promise<AuthUser> {
+    async register(payload: { email: string; password: string, name: string }): Promise<AuthUser> {
         const email = Email.create(payload.email);
         const password = Password.create(payload.password);
 
@@ -40,8 +40,8 @@ export class EmailAuthMethod implements AuthMethodPort {
             throw new Error("User with this email already exists");
         }
 
-        const passwordHash: string = await hash(password.value, 10);
-        const user = new AuthUser(randomUUID(), email, false, "email");
+        const passwordHash: string = await hash(password.value.toString(), 10) as string;
+        const user = new AuthUser(randomUUID(), email, payload.name, false, null, "email");
         await this.users.save(user, passwordHash);
 
         return user;

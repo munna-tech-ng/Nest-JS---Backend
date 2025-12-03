@@ -4,6 +4,7 @@ import { DRIZZLE } from './db.config';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
+import * as schema from './schema';
 
 @Global()
 @Module({
@@ -21,8 +22,8 @@ import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
                     connectionString: dbUrl,
                     max: 10
                 });
-                // Create drizzle entry
-                return drizzle({ client: pool });
+                // Create drizzle entry with schema for relational query API
+                return drizzle({ client: pool, schema });
             },
             inject: [ConfigService],
         }

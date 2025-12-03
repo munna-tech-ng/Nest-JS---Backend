@@ -1,5 +1,1 @@
-export type AuthMethodType =
-    | "email"
-    | "firebase"
-    | "code"
-    | "guest";
+export type AuthMethodType = "email" | "firebase" | "code" | "guest";

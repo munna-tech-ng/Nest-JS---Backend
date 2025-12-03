@@ -6,12 +6,18 @@ export class AuthUser {
     constructor(
         private readonly _id: string,
         private _email: Email | null,
+        private _name: string,
         private _isGuest: boolean,
+        private _code: string | null,
         private _provider: AuthProvider,
     ) { }
 
     get id() {
         return this._id;
+    }
+
+    get name() {
+        return this._name;
     }
 
     get email() {
@@ -20,6 +26,10 @@ export class AuthUser {
 
     get isGuest() {
         return this._isGuest;
+    }
+
+    get code() {
+        return this._code;
     }
 
     get provider() {
