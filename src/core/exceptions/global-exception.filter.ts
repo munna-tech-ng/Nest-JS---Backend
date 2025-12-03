@@ -102,4 +102,3 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         response.code(statusCode).send(errorResponse);
     }
 }
-
