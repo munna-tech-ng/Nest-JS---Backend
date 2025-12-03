@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpStatus, Post, UseGuards, Request } from "@nestjs/common";
 import { LoginUseCase } from "../../application/use-cases/login.use-case";
 import { RegisterUseCase } from "../../application/use-cases/register.use-case";
 import { CheckAuthUseCase } from "../../application/use-cases/check-auth.use-case";
@@ -7,8 +7,11 @@ import { AuthUserMapper } from "./http-dto/auth-user.mapper";
 import { AuthMethodType } from "../../domain/types/auth-method-type";
 import { RegisterRequestDto } from "./http-dto/register.request.dto";
 import { BaseMaper } from "src/core/dto/base.maper.dto";
+import { JwtAuthGuard } from "../../infrastructure/guards/jwt-auth.guard";
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 
+@ApiTags("Authentication")
 @Controller("auth")
 export class AuthController {
     constructor(
@@ -62,14 +65,17 @@ export class AuthController {
     }
 
     @Get("me")
-    async me(@Headers("authorization") authHeader: string): Promise<BaseMaper> {
-        console.log(authHeader);
-        const token = authHeader?.replace("Bearer ", "") ?? "";
-        console.log("hello", token)
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth("JWT-auth")
+    @ApiOperation({ summary: "Get current user information", description: "Retrieves the authenticated user's information. Requires Bearer token in Authorization header." })
+    @ApiResponse({ status: 200, description: "User information retrieved successfully" })
+    @ApiResponse({ status: 401, description: "Unauthorized - Invalid or missing Bearer token" })
+    async me(@Request() req: any): Promise<BaseMaper> {
+        // User is already validated by JwtAuthGuard, userId is available in req.user
+        // const userId = req.user.userId;
+        const token = req.headers.authorization?.replace("Bearer ", "") ?? "";
         const result = await this.checkAuthUseCase.execute(token);
-        const data = {
-            user: AuthUserMapper.toDto(result.user),
-        };
+        const data = AuthUserMapper.toDto(result.user);
         return {
             title: "User Information",
             message: "You'r user information has been successfully retrieved",

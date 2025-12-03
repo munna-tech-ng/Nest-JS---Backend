@@ -1,6 +1,13 @@
 import { ApiProperty } from "@nestjs/swagger";
 export class AuthUserResponseDto {
     @ApiProperty({
+        description: "User name",
+        example: "John Doe",
+        nullable: true,
+    })
+    name: string | null;
+
+    @ApiProperty({
         description: "User email address",
         example: "user@example.com",
         nullable: true,
@@ -19,6 +26,12 @@ export class AuthUserResponseDto {
         example: "email",
     })
     provider: string;
+
+    @ApiProperty({
+        description: "User activation code",
+        example: "12DS-DS89-SDLS-KD12",
+    })
+    code?: string | null;
 }
 
 export class AuthResponseDto {

@@ -14,10 +14,13 @@ import { GuestAuthMethod } from "../infrastructure/auth-methods/guest-auth.metho
 import { AUTH_METHODS } from "../domain/contracts/auth-method.port";
 import { JwtModule } from "@nestjs/jwt";
 import { FirebaseAdminService } from "../infrastructure/providers/firebase-admin.service";
+import { PassportModule } from "@nestjs/passport";
+import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
 
 @Module({
     controllers: [AuthController],
     imports: [
+        PassportModule,
         JwtModule.register({
             global: true,
             secret: process.env.JWT_SECRET ?? "jwt-secret",
@@ -33,6 +36,7 @@ import { FirebaseAdminService } from "../infrastructure/providers/firebase-admin
         { provide: TOKEN_SERVICE, useClass: JwtTokenService },
 
         FirebaseAdminService,
+        JwtStrategy,
         EmailAuthMethod,
         FirebaseAuthMethod,
         CodeAuthMethod,

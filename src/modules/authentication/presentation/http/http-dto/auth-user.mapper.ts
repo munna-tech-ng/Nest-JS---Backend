@@ -4,9 +4,11 @@ import { AuthUserResponseDto } from "./auth.response.dto";
 export class AuthUserMapper {    
     static toDto(user: AuthUser): AuthUserResponseDto {
         return {
+            name: user.name,
             email: user.email ? user.email.value : null,
             isGuest: user.isGuest,
-            provider: user.provider
+            provider: user.provider,
+            code: user.code as string || null
         };
     }
 }
