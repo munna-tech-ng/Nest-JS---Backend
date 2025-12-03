@@ -21,7 +21,6 @@ export class JwtTokenService implements TokenServicePort {
     }
 
     async verify(accessToken: string): Promise<{ userId: string }> {
-        console.log(accessToken);
         const decoded = await this.jwtService.verifyAsync<{ sub: string }>(accessToken, {
             secret: this.configService.get<string>('JWT_SECRET') as string,
         });

@@ -71,10 +71,8 @@ export class AuthController {
     @ApiResponse({ status: 200, description: "User information retrieved successfully" })
     @ApiResponse({ status: 401, description: "Unauthorized - Invalid or missing Bearer token" })
     async me(@Request() req: any): Promise<BaseMaper> {
-        // User is already validated by JwtAuthGuard, userId is available in req.user
-        // const userId = req.user.userId;
-        const token = req.headers.authorization?.replace("Bearer ", "") ?? "";
-        const result = await this.checkAuthUseCase.execute(token);
+        const userId = req.user.userId;
+        const result = await this.checkAuthUseCase.execute(userId);
         const data = AuthUserMapper.toDto(result.user);
         return {
             title: "User Information",

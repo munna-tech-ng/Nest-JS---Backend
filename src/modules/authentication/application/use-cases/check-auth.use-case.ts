@@ -13,9 +13,8 @@ export class CheckAuthUseCase {
         private readonly users: AuthUserRepositoryPort,
     ) { }
 
-    async execute(accessToken: string): Promise<LoginOutputDto> {
-        const payload = await this.tokenService.verify(accessToken);
-        const user = await this.users.findById(payload.userId);
+    async execute(userId: string): Promise<LoginOutputDto> {
+        const user = await this.users.findById(userId);
         if (!user) throw new Error("User not found");
 
         // Optionally re-issue a new token or reuse current one
