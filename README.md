@@ -25,6 +25,71 @@
 
 NestJS backend application with authentication module, built with clean architecture principles. This project uses PostgreSQL database, Drizzle ORM, Fastify, and supports multiple authentication methods (Email, Firebase, Code, Guest).
 
+## Tech Stack
+
+### Core Framework
+- **[NestJS](https://nestjs.com/)** v11.0.1 - Progressive Node.js framework for building efficient server-side applications
+- **[TypeScript](https://www.typescriptlang.org/)** v5.7.3 - Type-safe JavaScript with ES2023 target
+- **[Node.js](https://nodejs.org/)** - JavaScript runtime environment
+
+### HTTP Server & Middleware
+- **[Fastify](https://www.fastify.io/)** - High-performance HTTP server framework
+  - `@nestjs/platform-fastify` v11.1.9 - NestJS Fastify adapter
+  - `@fastify/cors` v11.1.0 - CORS support
+  - `@fastify/cookie` v11.0.2 - Cookie parsing and management
+  - `@fastify/multipart` v9.3.0 - Multipart form data handling
+  - `@fastify/static` v8.3.0 - Static file serving
+  - `@fastify/view` v11.1.1 - Template rendering (Handlebars)
+
+### Database & ORM
+- **[PostgreSQL](https://www.postgresql.org/)** - Relational database
+- **[Drizzle ORM](https://orm.drizzle.team/)** v0.44.7 - TypeScript ORM with type-safe queries
+- **[Drizzle Kit](https://orm.drizzle.team/kit-docs/overview)** v0.31.7 - Database migrations and schema management
+- **[pg](https://node-postgres.com/)** v8.16.3 - PostgreSQL client for Node.js
+
+### Authentication & Security
+- **[Passport.js](https://www.passportjs.org/)** v0.7.0 - Authentication middleware
+  - `@nestjs/passport` v11.0.5 - NestJS Passport integration
+  - `passport-jwt` v4.0.1 - JWT authentication strategy
+- **[JWT](https://jwt.io/)** - JSON Web Tokens
+  - `@nestjs/jwt` v11.0.1 - NestJS JWT module
+  - `jsonwebtoken` v9.0.2 - JWT implementation
+- **[bcrypt](https://www.npmjs.com/package/bcrypt)** v6.0.0 - Password hashing
+- **[Firebase Admin SDK](https://firebase.google.com/docs/admin/setup)** v13.6.0 - Firebase server-side authentication
+
+### API Documentation
+- **[Swagger/OpenAPI](https://swagger.io/)** - API documentation
+  - `@nestjs/swagger` v11.2.3 - Auto-generated API documentation
+
+### Configuration & Environment
+- **[@nestjs/config](https://docs.nestjs.com/techniques/configuration)** v4.0.2 - Configuration management
+- **[dotenv](https://www.npmjs.com/package/dotenv)** v17.2.3 - Environment variable management
+
+### Development Tools
+- **[ESLint](https://eslint.org/)** v9.18.0 - Code linting
+  - `typescript-eslint` v8.20.0 - TypeScript ESLint integration
+  - `eslint-config-prettier` v10.0.1 - Prettier integration
+  - `eslint-plugin-prettier` v5.2.2 - Prettier as ESLint rule
+- **[Prettier](https://prettier.io/)** v3.4.2 - Code formatting
+- **[Jest](https://jestjs.io/)** v29.7.0 - Testing framework
+  - `ts-jest` v29.2.5 - TypeScript Jest transformer
+  - `supertest` v7.0.0 - HTTP assertion testing
+- **[SWC](https://swc.rs/)** - Fast TypeScript/JavaScript compiler
+  - `@swc/core` v1.10.7 - SWC core
+  - `@swc/cli` v0.6.0 - SWC CLI
+
+### Build & Runtime
+- **[RxJS](https://rxjs.dev/)** v7.8.1 - Reactive programming library
+- **[reflect-metadata](https://www.npmjs.com/package/reflect-metadata)** v0.2.2 - Metadata reflection API
+- **[Handlebars](https://handlebarsjs.com/)** v4.7.8 - Template engine
+
+### Architecture Pattern
+- **Clean Architecture** - Separation of concerns with:
+  - **Domain Layer**: Entities, value objects, contracts, exceptions
+  - **Application Layer**: Use cases, DTOs
+  - **Infrastructure Layer**: Repositories, external services, providers
+  - **Presentation Layer**: Controllers, HTTP DTOs, Swagger documentation
+
 ## Features
 
 - 🔐 **Multiple Authentication Methods**: Email/Password, Firebase, Premium Code, and Guest authentication
