@@ -7,6 +7,7 @@ import { corsConfig } from "./core/config/cors.config";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { join } from "path";
 import fastifyCors from "@fastify/cors";
+import fastifyCookie from "@fastify/cookie";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 
@@ -18,6 +19,9 @@ async function bootstrap() {
 
     // Enable CORS
     await app.register(fastifyCors, corsConfig);
+
+    // Register cookie plugin
+    await app.register(fastifyCookie);
 
     // Configure Fastify to parse multipart/form-data
     await app.register(fastifyMultipart);

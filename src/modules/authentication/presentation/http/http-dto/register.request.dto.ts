@@ -38,4 +38,11 @@ export class RegisterRequestDto {
         type: DeviceDto,
     })
     device?: DeviceDto;
+
+    @ApiPropertyOptional({
+        description: "Remember me option - extends cookie expiration time",
+        example: false,
+        default: false,
+    })
+    rememberMe?: boolean;
 }

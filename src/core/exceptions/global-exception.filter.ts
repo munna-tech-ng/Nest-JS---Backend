@@ -6,7 +6,7 @@ import {
     HttpStatus,
     Logger,
 } from "@nestjs/common";
-import { Request, Response } from "express";
+import { FastifyRequest, FastifyReply } from "fastify";
 import { BaseException } from "./base.exception";
 import { BaseMaper } from "../dto/base.maper.dto";
 
@@ -16,8 +16,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
-        const response = ctx.getResponse<Response>();
-        const request = ctx.getRequest<Request>();
+        const response = ctx.getResponse<FastifyReply>();
+        const request = ctx.getRequest<FastifyRequest>();
 
         let statusCode: HttpStatus;
         let title: string;
@@ -98,7 +98,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             data: errorData,
         };
 
-        response.status(statusCode).json(errorResponse);
+        // Fastify response API: use code() and send()
+        response.code(statusCode).send(errorResponse);
     }
 }
 

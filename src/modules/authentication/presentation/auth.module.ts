@@ -3,6 +3,7 @@ import { AuthController } from "./http/auth.controller";
 import { LoginUseCase } from "../application/use-cases/login.use-case";
 import { RegisterUseCase } from "../application/use-cases/register.use-case";
 import { CheckAuthUseCase } from "../application/use-cases/check-auth.use-case";
+import { RefreshTokenUseCase } from "../application/use-cases/refresh-token.use-case";
 import { AUTH_USER_REPO } from "../domain/contracts/auth-user-repository.port";
 import { AuthUserRepository } from "../infrastructure/persistence/auth-user.repository";
 import { TOKEN_SERVICE } from "../domain/contracts/token-service.port";
@@ -14,6 +15,7 @@ import { GuestAuthMethod } from "../infrastructure/auth-methods/guest-auth.metho
 import { AUTH_METHODS } from "../domain/contracts/auth-method.port";
 import { JwtModule } from "@nestjs/jwt";
 import { FirebaseAdminService } from "../infrastructure/providers/firebase-admin.service";
+import { CookieService } from "../infrastructure/providers/cookie.service";
 import { PassportModule } from "@nestjs/passport";
 import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
 
@@ -31,12 +33,14 @@ import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
         LoginUseCase,
         RegisterUseCase,
         CheckAuthUseCase,
+        RefreshTokenUseCase,
 
         { provide: AUTH_USER_REPO, useClass: AuthUserRepository },
         { provide: TOKEN_SERVICE, useClass: JwtTokenService },
 
         FirebaseAdminService,
         JwtStrategy,
+        CookieService,
         EmailAuthMethod,
         FirebaseAuthMethod,
         CodeAuthMethod,

@@ -79,4 +79,42 @@ export class JwtTokenService implements TokenServicePort {
         });
         return { userId: decoded.sub };
     }
+
+    async refresh(refreshToken: string): Promise<TokenPair> {
+        // Verify refresh token
+        const decoded = await this.jwtService.verifyAsync<{ sub: string }>(refreshToken, {
+            secret: this.configService.get<string>('JWT_SECRET') as string,
+        });
+
+        const userId = decoded.sub;
+        const payload = { sub: userId };
+
+        // Parse expiration times from environment or use defaults
+        const accessTokenExpiresInMs = this.parseExpirationTime(
+            this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRES_IN'),
+            60 * 60 * 1000 // Default: 1 hour
+        );
+        const refreshTokenExpiresInMs = this.parseExpirationTime(
+            this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRES_IN'),
+            60 * 60 * 24 * 1000 // Default: 24 hours
+        );
+
+        // Generate new token pair
+        const accessToken = await this.jwtService.signAsync(payload, {
+            expiresIn: Math.floor(accessTokenExpiresInMs / 1000),
+        });
+        const newRefreshToken = await this.jwtService.signAsync(payload, {
+            expiresIn: Math.floor(refreshTokenExpiresInMs / 1000),
+        });
+
+        const accessTokenExpiresAt = new Date(Date.now() + accessTokenExpiresInMs);
+        const refreshTokenExpiresAt = new Date(Date.now() + refreshTokenExpiresInMs);
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
+            accessTokenExpiresAt,
+            refreshTokenExpiresAt,
+        } as TokenPair;
+    }
 }
