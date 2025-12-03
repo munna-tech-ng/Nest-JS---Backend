@@ -9,6 +9,7 @@ export const corsConfig = {
         "Authorization",
         "Accept",
         "X-Requested-With",
+        'refresh-token'
     ],
     credentials: true,
 };
