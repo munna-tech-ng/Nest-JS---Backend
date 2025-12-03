@@ -64,8 +64,8 @@ export class FirebaseAdminService implements OnModuleInit {
                 email: decodedToken.email || null,
                 name: decodedToken.name || null,
             };
-        } catch (error) {
-            throw new FirebaseAuthException(`Invalid Firebase ID token: ${error instanceof Error ? error.message : String(error)}`);
+        } catch {
+            throw new FirebaseAuthException(`Invalid ID token`);
         }
     }
 
@@ -88,7 +88,7 @@ export class FirebaseAdminService implements OnModuleInit {
             if (error instanceof Error && error.message.includes("not found")) {
                 return null;
             }
-            throw new FirebaseAuthException(`Failed to get user from Firebase: ${error instanceof Error ? error.message : String(error)}`);
+            throw new FirebaseAuthException(`Failed to get user by UID`);
         }
     }
 }

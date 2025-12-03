@@ -3,9 +3,10 @@ import { AuthUser } from "../../domain/entities/auth-user.entity";
 import { AuthMethodPort } from "../../domain/contracts/auth-method.port";
 import { AUTH_USER_REPO, AuthUserRepositoryPort } from "../../domain/contracts/auth-user-repository.port";
 import { AuthMethodType } from "../../domain/types/auth-method-type";
-import { randomUUID } from "crypto";
+import { hash } from "bcrypt";
 import { Email } from "../../domain/value-objects/email.vo";
 import { GuestFlagRequiredException } from "../../domain/exceptions";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class GuestAuthMethod implements AuthMethodPort {
@@ -20,8 +21,9 @@ export class GuestAuthMethod implements AuthMethodPort {
         if (!payload.isGuest) throw new GuestFlagRequiredException();
         const userName = "Guest";
         const guestCode = Email.create(randomUUID() + "@guest.com");
-        const user = new AuthUser(crypto.randomUUID(), guestCode, userName, true, null, "guest");
-        await this.users.save(user, null);
+        const passwordHash: string = await hash(randomUUID().toString(), 10);
+        const user = new AuthUser(randomUUID(), guestCode, userName, true, null, "guest");
+        await this.users.save(user, passwordHash);
         return user;
     }
 }

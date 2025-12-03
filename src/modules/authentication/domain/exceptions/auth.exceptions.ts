@@ -37,9 +37,9 @@ export class AuthValidationException extends BaseException {
 export class FirebaseAuthException extends BaseException {
     constructor(message?: string) {
         super(
-            message ?? "Firebase authentication failed",
+            message ?? "Authentication failed",
             HttpStatus.CONFLICT,
-            "Firebase Authentication Failed",
+            "Authentication Failed",
             {
                 code: "FIREBASE_AUTH_FAILED",
                 message: message,
