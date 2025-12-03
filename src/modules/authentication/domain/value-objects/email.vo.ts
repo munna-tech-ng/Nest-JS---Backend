@@ -1,10 +1,12 @@
+import { AuthValidationException } from "../exceptions";
+
 export class Email {
     private constructor(private readonly _value: string) { }
 
     static create(raw: string): Email {
         const value = raw.trim().toLowerCase();
         if (!value || !value.includes("@")) {
-            throw new Error("Invalid email");
+            throw new AuthValidationException("Invalid email", "email");
         }
         return new Email(value);
     }

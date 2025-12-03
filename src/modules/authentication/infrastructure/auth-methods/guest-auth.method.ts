@@ -5,6 +5,7 @@ import { AUTH_USER_REPO, AuthUserRepositoryPort } from "../../domain/contracts/a
 import { AuthMethodType } from "../../domain/types/auth-method-type";
 import { randomUUID } from "crypto";
 import { Email } from "../../domain/value-objects/email.vo";
+import { GuestFlagRequiredException } from "../../domain/exceptions";
 
 @Injectable()
 export class GuestAuthMethod implements AuthMethodPort {
@@ -16,7 +17,7 @@ export class GuestAuthMethod implements AuthMethodPort {
     ) { }
 
     async login(payload: { isGuest: boolean }): Promise<AuthUser> {
-        if (!payload.isGuest) throw new Error("Guest flag required");
+        if (!payload.isGuest) throw new GuestFlagRequiredException();
         const userName = "Guest";
         const guestCode = Email.create(randomUUID() + "@guest.com");
         const user = new AuthUser(crypto.randomUUID(), guestCode, userName, true, null, "guest");

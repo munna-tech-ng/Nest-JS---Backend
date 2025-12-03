@@ -4,34 +4,58 @@ import { DeviceDto } from "./device.dto";
 
 export class LoginRequestDto {
     @ApiProperty({
-        description: "Authentication method type",
+        description: "Authentication method type. Available methods: email, firebase, code, guest",
         enum: ["email", "firebase", "code", "guest"],
         example: "email",
     })
     method: AuthMethodType;
 
     @ApiProperty({
-        description: "Authentication payload (varies by method)",
+        description: `Authentication payload (varies by method):
+        - email: { email: string, password: string }
+        - firebase: { idToken: string }
+        - code: { code: string }
+        - guest: { isGuest: boolean }`,
         examples: {
             email: {
+                summary: "Email Authentication",
+                description: "Login with email and password",
                 value: {
-                    email: "user@example.com",
-                    password: "securePassword123",
+                    method: "email",
+                    payload: {
+                        email: "user@example.com",
+                        password: "securePassword123",
+                    },
                 },
             },
             firebase: {
+                summary: "Firebase Authentication",
+                description: "Login with Firebase ID token",
                 value: {
-                    idToken: "firebase-id-token-string",
+                    method: "firebase",
+                    payload: {
+                        idToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEyMzQ1Njc4OTAifQ...",
+                    },
                 },
             },
             code: {
+                summary: "Premium Code Authentication",
+                description: "Login with activation/premium code",
                 value: {
-                    code: "premium-code-12345",
+                    method: "code",
+                    payload: {
+                        code: "PREMIUM-CODE-12345",
+                    },
                 },
             },
             guest: {
+                summary: "Guest Authentication",
+                description: "Login as guest user",
                 value: {
-                    isGuest: true,
+                    method: "guest",
+                    payload: {
+                        isGuest: true,
+                    },
                 },
             },
         },

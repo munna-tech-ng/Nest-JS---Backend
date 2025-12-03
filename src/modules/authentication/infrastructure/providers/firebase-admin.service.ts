@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import * as admin from "firebase-admin";
 import { DecodedIdToken } from "firebase-admin/auth";
 import * as fs from "fs";
+import { FirebaseAuthException } from "../../domain/exceptions";
 
 export interface FirebaseUserInfo {
     uid: string;
@@ -38,12 +39,12 @@ export class FirebaseAdminService implements OnModuleInit {
                     credential: admin.credential.cert(serviceAccount),
                 });
             } else {
-                throw new Error(
+                throw new FirebaseAuthException(
                     "Firebase Admin SDK configuration missing. Provide either FIREBASE_SERVICE_ACCOUNT_PATH, FIREBASE_SERVICE_ACCOUNT_JSON, or FIREBASE_PROJECT_ID + FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL"
                 );
             }
         } catch (error) {
-            throw new Error(`Failed to initialize Firebase Admin SDK: ${error instanceof Error ? error.message : String(error)}`);
+            throw new FirebaseAuthException(`Failed to initialize Firebase Admin SDK: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -52,7 +53,7 @@ export class FirebaseAdminService implements OnModuleInit {
      */
     async verifyIdToken(idToken: string): Promise<FirebaseUserInfo> {
         if (!this.app) {
-            throw new Error("Firebase Admin SDK not initialized");
+            throw new FirebaseAuthException("Firebase Admin SDK not initialized");
         }
 
         try {
@@ -64,7 +65,7 @@ export class FirebaseAdminService implements OnModuleInit {
                 name: decodedToken.name || null,
             };
         } catch (error) {
-            throw new Error(`Invalid Firebase ID token: ${error instanceof Error ? error.message : String(error)}`);
+            throw new FirebaseAuthException(`Invalid Firebase ID token: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -73,7 +74,7 @@ export class FirebaseAdminService implements OnModuleInit {
      */
     async getUserByUid(uid: string): Promise<FirebaseUserInfo | null> {
         if (!this.app) {
-            throw new Error("Firebase Admin SDK not initialized");
+            throw new FirebaseAuthException("Firebase Admin SDK not initialized");
         }
 
         try {
@@ -87,7 +88,7 @@ export class FirebaseAdminService implements OnModuleInit {
             if (error instanceof Error && error.message.includes("not found")) {
                 return null;
             }
-            throw new Error(`Failed to get user from Firebase: ${error instanceof Error ? error.message : String(error)}`);
+            throw new FirebaseAuthException(`Failed to get user from Firebase: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 }

@@ -9,6 +9,7 @@ import { RegisterRequestDto } from "./http-dto/register.request.dto";
 import { BaseMaper } from "src/core/dto/base.maper.dto";
 import { JwtAuthGuard } from "../../infrastructure/guards/jwt-auth.guard";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { LoginApiDocs } from "./swagger/login.swagger";
 
 
 @ApiTags("Authentication")
@@ -21,6 +22,7 @@ export class AuthController {
     ) { }
 
     @Post("login")
+    @LoginApiDocs()
     async login(@Body() body: LoginRequestDto): Promise<BaseMaper> {
         const result = await this.loginUseCase.execute(body);
         const data = {

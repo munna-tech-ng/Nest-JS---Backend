@@ -17,6 +17,38 @@ export class UserAlreadyExistsException extends BaseException {
     }
 }
 
+export class AuthValidationException extends BaseException {
+    constructor(message?: string, key?: string) {
+        super(
+            message ?? "Authentication validation failed",
+            HttpStatus.CONFLICT,
+            "Authentication Validation Failed",
+            {
+                code: "AUTH_VALIDATION_FAILED",
+                message: message,
+                key: key,
+            },
+            false, // Don't log expected business exceptions
+        );
+    }
+}
+
+
+export class FirebaseAuthException extends BaseException {
+    constructor(message?: string) {
+        super(
+            message ?? "Firebase authentication failed",
+            HttpStatus.CONFLICT,
+            "Firebase Authentication Failed",
+            {
+                code: "FIREBASE_AUTH_FAILED",
+                message: message,
+            },
+            false,
+        );
+    }
+}
+
 export class InvalidActivationCodeException extends BaseException {
     constructor() {
         super(
@@ -103,3 +135,17 @@ export class FirebaseUserEmailNotFoundException extends BaseException {
     }
 }
 
+// GuestFlagRequiredException
+export class GuestFlagRequiredException extends BaseException {
+    constructor() {
+        super(
+            "Guest flag required",
+            HttpStatus.BAD_REQUEST,
+            "Guest Flag Required",
+            {
+                code: "GUEST_FLAG_REQUIRED",
+            },
+            false, // Don't log expected business exceptions
+        );
+    }
+}

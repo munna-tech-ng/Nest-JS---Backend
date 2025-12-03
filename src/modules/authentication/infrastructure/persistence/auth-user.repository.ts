@@ -50,6 +50,7 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
     await this.db.insert(schema.user).values({
       name: user.name,
       email: user.email?.value as string,
+      is_guest: user.isGuest ? true : false,
       password: passwordHash ?? "",
       code: user.code ?? "",
     });

@@ -3,6 +3,7 @@ import { LoginInputDto } from "../dto/login-input.dto";
 import { AUTH_METHODS, AuthMethodPort } from "../../domain/contracts/auth-method.port";
 import { TOKEN_SERVICE, TokenServicePort } from "../../domain/contracts/token-service.port";
 import { LoginOutputDto } from "../dto/login-output.dto";
+import { UnsupportedAuthMethodException } from "../../domain/exceptions";
 
 @Injectable()
 export class LoginUseCase {
@@ -17,7 +18,7 @@ export class LoginUseCase {
     async execute(input: LoginInputDto): Promise<LoginOutputDto> {
         const method = this.methods.find((m) => m.type === input.method);
         if (!method) {
-            throw new Error("Unsupported login method");
+            throw new UnsupportedAuthMethodException();
         }
 
         const user = await method.login(input.payload);
