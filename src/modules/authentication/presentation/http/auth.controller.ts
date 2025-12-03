@@ -32,7 +32,7 @@ export class AuthController {
         };
         return {
             title: "Login Success",
-            message: "You'r login has been successful",
+            message: "Your login has been successful",
             error: false,
             statusCode: HttpStatus.OK,
             data
@@ -56,8 +56,8 @@ export class AuthController {
         };
 
         return {
-            title: "Login Success",
-            message: "You'r login has been successful",
+            title: "Registration Complete",
+            message: "Your registration has been successful",
             error: false,
             statusCode: HttpStatus.OK,
             data
@@ -76,7 +76,7 @@ export class AuthController {
         const data = AuthUserMapper.toDto(result.user);
         return {
             title: "User Information",
-            message: "You'r user information has been successfully retrieved",
+            message: "Your information has been successfully retrieved",
             error: false,
             statusCode: HttpStatus.OK,
             data

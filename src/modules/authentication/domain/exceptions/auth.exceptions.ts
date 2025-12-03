@@ -17,6 +17,20 @@ export class UserAlreadyExistsException extends BaseException {
     }
 }
 
+export class InvalidActivationCodeException extends BaseException {
+    constructor() {
+        super(
+            "Invalid Activation Code",
+            HttpStatus.UNAUTHORIZED,
+            "Authentication Failed",
+            {
+                code: "INVALID_ACTIVATION_CODE"
+            },
+            false
+        )
+    }
+}
+
 export class InvalidCredentialsException extends BaseException {
     constructor() {
         super(

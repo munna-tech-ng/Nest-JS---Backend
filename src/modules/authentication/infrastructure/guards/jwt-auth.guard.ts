@@ -14,7 +14,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 
         // Check if Bearer token is present
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Bearer token is required");
+            throw new UnauthorizedException("Invalid credentials");
         }
 
         // If there's an error or no user, throw unauthorized
