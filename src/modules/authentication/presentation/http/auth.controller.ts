@@ -10,6 +10,7 @@ import { BaseMaper } from "src/core/dto/base.maper.dto";
 import { JwtAuthGuard } from "../../infrastructure/guards/jwt-auth.guard";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { LoginApiDocs } from "./swagger/login.swagger";
+import { RegisterApiDocs } from "./swagger/register.swagger";
 
 
 @ApiTags("Authentication")
@@ -42,6 +43,7 @@ export class AuthController {
     }
 
     @Post("register")
+    @RegisterApiDocs()
     async register(@Body() body: RegisterRequestDto): Promise<BaseMaper> {
         await this.registerUseCase.execute({
             method: body.method as Extract<AuthMethodType, "email" | "firebase">,
