@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1764667329277,
+      "tag": "0000_big_roulette",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1764675987334,
+      "tag": "0001_brainy_molten_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764744784385,
+      "tag": "0002_opposite_crusher_hogan",
+      "breakpoints": true
+    }
+  ]
+}

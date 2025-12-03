@@ -1,0 +1,29 @@
+import { Inject, Injectable } from "@nestjs/common";
+import { TOKEN_SERVICE, TokenServicePort } from "../../domain/contracts/token-service.port";
+import { AUTH_USER_REPO, AuthUserRepositoryPort } from "../../domain/contracts/auth-user-repository.port";
+import { LoginOutputDto } from "../dto/login-output.dto";
+
+
+@Injectable()
+export class CheckAuthUseCase {
+    constructor(
+        @Inject(TOKEN_SERVICE)
+        private readonly tokenService: TokenServicePort,
+        @Inject(AUTH_USER_REPO)
+        private readonly users: AuthUserRepositoryPort,
+    ) { }
+
+    async execute(accessToken: string): Promise<LoginOutputDto> {
+        const payload = await this.tokenService.verify(accessToken);
+        const user = await this.users.findById(payload.userId);
+        if (!user) throw new Error("User not found");
+
+        // Optionally re-issue a new token or reuse current one
+        const tokenInformation = await this.tokenService.generate(user);
+
+        return {
+            user,
+            ...tokenInformation
+        };
+    }
+}
