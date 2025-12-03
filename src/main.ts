@@ -3,9 +3,30 @@ import { AppModule } from "./app.module";
 import { SwaggerModule } from "@nestjs/swagger";
 import { GlobalExceptionFilter } from "./core/exceptions/global-exception.filter";
 import { swaggerConfig, swaggerOptions } from "./core/config/swagger.config";
+import { corsConfig } from "./core/config/cors.config";
+import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
+import { join } from "path";
+import fastifyCors from "@fastify/cors";
+import fastifyMultipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestFastifyApplication>(
+        AppModule,
+        new FastifyAdapter(),
+    );
+
+    // Enable CORS
+    await app.register(fastifyCors, corsConfig);
+
+    // Configure Fastify to parse multipart/form-data
+    await app.register(fastifyMultipart);
+
+    // Use public as asset directory
+    await app.register(fastifyStatic, {
+        root: join(process.cwd(), "public"),
+        prefix: "/public/",
+    });
 
     // Apply global exception filter
     app.useGlobalFilters(new GlobalExceptionFilter());
@@ -14,6 +35,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, swaggerConfig, swaggerOptions);
     SwaggerModule.setup("api", app, document);
 
-    await app.listen(process.env.PORT ?? 3001);
+    // Run the application
+    await app.listen(process.env.PORT ?? 3001, "0.0.0.0");
 }
 bootstrap();
