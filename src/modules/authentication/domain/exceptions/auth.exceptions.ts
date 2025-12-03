@@ -12,6 +12,7 @@ export class UserAlreadyExistsException extends BaseException {
                 field: "email",
                 email: email,
             },
+            false, // Don't log expected business exceptions
         );
     }
 }
@@ -25,6 +26,7 @@ export class InvalidCredentialsException extends BaseException {
             {
                 code: "INVALID_CREDENTIALS",
             },
+            false, // Don't log expected business exceptions
         );
     }
 }
@@ -39,6 +41,7 @@ export class UserNotFoundException extends BaseException {
                 code: "USER_NOT_FOUND",
                 userId: userId,
             },
+            false, // Don't log expected business exceptions
         );
     }
 }
@@ -53,6 +56,7 @@ export class UnsupportedAuthMethodException extends BaseException {
                 code: "UNSUPPORTED_AUTH_METHOD",
                 method: method,
             },
+            false, // Don't log expected business exceptions
         );
     }
 }
@@ -66,6 +70,7 @@ export class InvalidTokenException extends BaseException {
             {
                 code: "INVALID_TOKEN",
             },
+            false, // Don't log expected business exceptions
         );
     }
 }
@@ -79,6 +84,7 @@ export class FirebaseUserEmailNotFoundException extends BaseException {
             {
                 code: "FIREBASE_EMAIL_NOT_FOUND",
             },
+            false, // Don't log expected business exceptions
         );
     }
 }

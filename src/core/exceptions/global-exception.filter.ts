@@ -70,12 +70,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             };
         }
 
-        // Log the error
-        this.logger.error(
-            `${title}: ${message}`,
-            exception instanceof Error ? exception.stack : undefined,
-            `${request.method} ${request.url}`,
-        );
+        // Log only unexpected errors (5xx) or exceptions that explicitly should be logged
+        const shouldLog = 
+            exception instanceof BaseException 
+                ? exception.shouldLog 
+                : statusCode >= HttpStatus.INTERNAL_SERVER_ERROR;
+
+        if (shouldLog) {
+            this.logger.error(
+                `${title}: ${message}`,
+                exception instanceof Error ? exception.stack : undefined,
+                `${request.method} ${request.url}`,
+            );
+        } else {
+            // Log at debug level for expected business exceptions (4xx)
+            this.logger.debug(
+                `${title}: ${message} - ${request.method} ${request.url}`,
+            );
+        }
 
         // Build response in BaseMaper format
         const errorResponse: BaseMaper = {
