@@ -149,18 +149,22 @@ export class AuthController {
     @Post("logout")
     @LogoutApiDocs()
     logout(
-        @Res({ passthrough: true }) response: FastifyReply,
-    ): BaseMaper {
-        // Clear HTTP-only cookies
+        @Res() response: FastifyReply,
+    ): void {
+        // Clear HTTP-only cookies BEFORE sending response
         this.cookieService.clearAuthCookies(response);
 
-        return {
+        // Manually send response to ensure cookies are set before response is sent
+        const responseData: BaseMaper = {
             title: "Logout Successful",
             message: "You have been successfully logged out",
             error: false,
             statusCode: HttpStatus.OK,
             data: null,
         };
+
+        // Send response with cleared cookies
+        response.code(HttpStatus.OK).send(responseData);
     }
 
     @Get("me")

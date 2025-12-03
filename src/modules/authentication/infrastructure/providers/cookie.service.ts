@@ -51,18 +51,61 @@ export class CookieService {
      * @param response Fastify response object
      */
     clearAuthCookies(response: FastifyReply): void {
-        const cookieOptions = {
+        // Cookie options - must match EXACTLY what was used to set them
+        // Important: secure must match (false in dev, true in prod)
+        const isProduction = process.env.NODE_ENV === "production";
+        const baseOptions = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: isProduction,
             sameSite: "lax" as const,
             path: "/",
         };
 
-        // Clear access token cookie
-        response.clearCookie("sso_token", cookieOptions);
-
-        // Clear refresh token cookie
-        response.clearCookie("sso_refresh_token", cookieOptions);
+        // Try multiple methods to ensure cookies are cleared
+        
+        // Method 1: Use Fastify's clearCookie
+        try {
+            response.clearCookie("sso_token", baseOptions);
+            response.clearCookie("sso_refresh_token", baseOptions);
+        } catch (error) {
+            console.error("Error using clearCookie:", error);
+        }
+        
+        // Method 2: Set cookies to empty with maxAge: 0
+        try {
+            response.setCookie("sso_token", "", {
+                ...baseOptions,
+                maxAge: 0,
+            });
+            response.setCookie("sso_refresh_token", "", {
+                ...baseOptions,
+                maxAge: 0,
+            });
+        } catch (error) {
+            console.error("Error using setCookie with maxAge 0:", error);
+        }
+        
+        // Method 3: Manually set Set-Cookie headers (most reliable)
+        // This bypasses Fastify's cookie plugin and sets headers directly
+        const secureFlag = isProduction ? "; Secure" : "";
+        const cookieHeader1 = `sso_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureFlag}`;
+        const cookieHeader2 = `sso_refresh_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureFlag}`;
+        
+        // Get existing Set-Cookie headers
+        const existingCookies = response.getHeader("Set-Cookie");
+        let cookiesArray: string[] = [];
+        
+        if (existingCookies) {
+            cookiesArray = Array.isArray(existingCookies) 
+                ? existingCookies 
+                : [existingCookies as string];
+        }
+        
+        // Add our cookie clearing headers (these will override any existing ones)
+        cookiesArray.push(cookieHeader1, cookieHeader2);
+        
+        // Set the Set-Cookie header directly
+        response.header("Set-Cookie", cookiesArray);
     }
 }
 
