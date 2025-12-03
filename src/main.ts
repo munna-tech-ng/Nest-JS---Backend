@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { GlobalExceptionFilter } from './core/exceptions/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Apply global exception filter
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Enova Auth Module')

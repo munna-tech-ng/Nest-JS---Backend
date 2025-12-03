@@ -7,6 +7,7 @@ import { Password } from "../../domain/value-objects/password.vo";
 import { AuthUser } from "../../domain/entities/auth-user.entity";
 import { hash, compare } from "bcrypt";
 import { randomUUID } from "crypto";
+import { UserAlreadyExistsException, InvalidCredentialsException } from "../../domain/exceptions/auth.exceptions";
 
 @Injectable()
 export class EmailAuthMethod implements AuthMethodPort {
@@ -19,13 +20,13 @@ export class EmailAuthMethod implements AuthMethodPort {
     async login(payload: { email: string; password: string }): Promise<AuthUser> {
         const email = Email.create(payload.email);
         const user: AuthUser | null = await this.users.findByEmail(email);
-        if (!user) throw new Error("Invalid credentials");
+        if (!user) throw new InvalidCredentialsException();
 
         const passwordHash: string = await this.users.getPasswordHashByEmail(email) as string;
-        if (!passwordHash) throw new Error("Invalid credentials");
+        if (!passwordHash) throw new InvalidCredentialsException();
 
         const passwordOk: boolean = await compare((payload.password).toString(), passwordHash);
-        if (!passwordOk) throw new Error("Invalid credentials");
+        if (!passwordOk) throw new InvalidCredentialsException();
 
         return user;
     }
@@ -37,7 +38,7 @@ export class EmailAuthMethod implements AuthMethodPort {
         // Check if user already exists
         const existingUser = await this.users.findByEmail(email);
         if (existingUser) {
-            throw new Error("User with this email already exists");
+            throw new UserAlreadyExistsException(email.value);
         }
 
         const passwordHash: string = await hash(password.value.toString(), 10) as string;

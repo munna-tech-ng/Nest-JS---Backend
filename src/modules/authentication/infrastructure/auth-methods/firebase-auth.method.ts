@@ -6,6 +6,7 @@ import { AuthUser } from "../../domain/entities/auth-user.entity";
 import { Email } from "../../domain/value-objects/email.vo";
 import { FirebaseAdminService } from "../providers/firebase-admin.service";
 import { randomUUID } from "crypto";
+import { UserNotFoundException, UserAlreadyExistsException, FirebaseUserEmailNotFoundException } from "../../domain/exceptions/auth.exceptions";
 
 @Injectable()
 export class FirebaseAuthMethod implements AuthMethodPort {
@@ -22,7 +23,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const firebaseUser = await this.firebaseAdmin.verifyIdToken(payload.idToken);
         
         if (!firebaseUser.email) {
-            throw new Error("Firebase user email not found");
+            throw new FirebaseUserEmailNotFoundException();
         }
 
         // Find user by email in database
@@ -30,7 +31,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const user = await this.users.findByEmail(email);
         
         if (!user) {
-            throw new Error("User not found. Please register first.");
+            throw new UserNotFoundException();
         }
 
         return user;
@@ -41,7 +42,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const firebaseUser = await this.firebaseAdmin.verifyIdToken(payload.idToken);
         
         if (!firebaseUser.email) {
-            throw new Error("Firebase user email not found");
+            throw new FirebaseUserEmailNotFoundException();
         }
 
         // Check if user already exists
@@ -49,7 +50,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const existingUser = await this.users.findByEmail(email);
         
         if (existingUser) {
-            throw new Error("User with this email already exists");
+            throw new UserAlreadyExistsException(firebaseUser.email);
         }
 
         const userName = firebaseUser.name ?? "User";

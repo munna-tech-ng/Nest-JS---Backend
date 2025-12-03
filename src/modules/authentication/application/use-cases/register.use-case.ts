@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { RegisterInputDto } from "../dto/register-input.dto";
 import { AUTH_METHODS, AuthMethodPort } from "../../domain/contracts/auth-method.port";
+import { UnsupportedAuthMethodException } from "../../domain/exceptions/auth.exceptions";
 
 @Injectable()
 export class RegisterUseCase {
@@ -11,7 +12,7 @@ export class RegisterUseCase {
     async execute(input: RegisterInputDto) {
         const method = this.methods.find((m) => m.type === input.method);
         if (!method || !method.register) {
-            throw new Error("Unsupported register method");
+            throw new UnsupportedAuthMethodException(input.method);
         }
 
         return await method.register(input.payload);
