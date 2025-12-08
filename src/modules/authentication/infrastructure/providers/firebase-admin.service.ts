@@ -9,6 +9,13 @@ export interface FirebaseUserInfo {
     uid: string;
     email: string | null;
     name?: string | null;
+    picture?: string | null;
+    user_id?: string | null,
+    sub?: string | null,
+    firebase?: {
+        identities: Record<string, string[] | undefined>,
+        sign_in_provider: string | null
+    },
 }
 
 @Injectable()
@@ -63,6 +70,13 @@ export class FirebaseAdminService implements OnModuleInit {
                 uid: decodedToken.uid,
                 email: decodedToken.email || null,
                 name: decodedToken.name || null,
+                picture: decodedToken.picture || null,
+                user_id: decodedToken.user_id || null,
+                sub: decodedToken.sub || null,
+                firebase: {
+                    identities: decodedToken.firebase?.identities || null,
+                    sign_in_provider: decodedToken.firebase?.sign_in_provider || null,
+                },
             };
         } catch {
             throw new FirebaseAuthException(`Invalid ID token`);

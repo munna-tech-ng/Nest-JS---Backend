@@ -10,6 +10,7 @@ export class AuthUser {
         private _isGuest: boolean,
         private _code: string | null,
         private _provider: AuthProvider,
+        private _isExistingUser: boolean = false,
     ) { }
 
     get id() {
@@ -34,5 +35,13 @@ export class AuthUser {
 
     get provider() {
         return this._provider;
+    }
+
+    get isExistingUser() {
+        return this._isExistingUser;
+    }
+
+    set isExistingUser(value: boolean) {
+        this._isExistingUser = value;
     }
 }

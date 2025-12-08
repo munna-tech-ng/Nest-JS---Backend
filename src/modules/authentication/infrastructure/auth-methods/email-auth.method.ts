@@ -5,7 +5,7 @@ import { AUTH_USER_REPO, AuthUserRepositoryPort } from "../../domain/contracts/a
 import { Email } from "../../domain/value-objects/email.vo";
 import { Password } from "../../domain/value-objects/password.vo";
 import { AuthUser } from "../../domain/entities/auth-user.entity";
-import { hash, compare } from "bcrypt";
+import { compare } from "bcrypt";
 import { randomUUID } from "crypto";
 import { UserAlreadyExistsException, InvalidCredentialsException } from "../../domain/exceptions/auth.exceptions";
 
@@ -41,10 +41,9 @@ export class EmailAuthMethod implements AuthMethodPort {
             throw new UserAlreadyExistsException(email.value);
         }
 
-        const passwordHash: string = await hash(password.value.toString(), 10) as string;
+        const passwordHash: string = await this.users.generatePasswordHash(password.value.toString());
         const user = new AuthUser(randomUUID(), email, payload.name, false, null, "email");
-        await this.users.save(user, passwordHash);
-
+        await this.users.save(user, passwordHash, "email", "", null);
         return user;
     }
 }

@@ -80,7 +80,7 @@ export class InvalidCredentialsException extends BaseException {
 export class UserNotFoundException extends BaseException {
     constructor(userId?: string) {
         super(
-            "User not found",
+            "User with this email not found",
             HttpStatus.NOT_FOUND,
             "User Not Found",
             {
@@ -124,9 +124,9 @@ export class InvalidTokenException extends BaseException {
 export class FirebaseUserEmailNotFoundException extends BaseException {
     constructor() {
         super(
-            "Firebase user email not found",
-            HttpStatus.BAD_REQUEST,
-            "Firebase Authentication Error",
+            "User or  email not found",
+            HttpStatus.NOT_FOUND,
+            "User or Email Not Found",
             {
                 code: "FIREBASE_EMAIL_NOT_FOUND",
             },

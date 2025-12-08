@@ -7,6 +7,9 @@ export const user = pgTable('users', {
     is_guest: boolean('is_guest').default(false),
     code: text("code").default(""),
     password: text('password').notNull(),
+    avatar: text("avatar").default(""),
+    provider: text("provider").notNull(),
+    provider_id: text("provider_id").default(""),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

@@ -69,31 +69,28 @@ export class AuthController {
         @Body() body: RegisterRequestDto,
         @Res({ passthrough: true }) response: FastifyReply,
     ): Promise<BaseMaper> {
-        await this.registerUseCase.execute({
+        const registeredUser = await this.registerUseCase.execute({
             method: body.method as Extract<AuthMethodType, "email" | "firebase">,
             payload: body.payload as { email: string; password: string, name: string } | { idToken: string },
         });
 
-        const loginResult = await this.loginUseCase.execute(body);
+        const generatedToken = await this.registerUseCase.generateToken(registeredUser);
         const data = {
-            accessToken: loginResult.accessToken,
-            refreshToken: loginResult.refreshToken,
-            accessTokenExpiresAt: loginResult.accessTokenExpiresAt,
-            refreshTokenExpiresAt: loginResult.refreshTokenExpiresAt,
-            user: AuthUserMapper.toDto(loginResult.user),
+            user: AuthUserMapper.toDto(registeredUser),
+            ...generatedToken
         };
 
         // Set HTTP-only cookies for web clients
         this.cookieService.setAuthCookies(
             response,
-            loginResult.accessToken,
-            loginResult.refreshToken,
+            generatedToken.accessToken,
+            generatedToken.refreshToken,
             body.rememberMe ?? false,
         );
 
         return {
-            title: "Registration Complete",
-            message: "Your registration has been successful",
+            title: registeredUser.isExistingUser ? "Login Successful" : "Registration Complete",
+            message: registeredUser.isExistingUser ? "Your login has been successful" : "Your registration has been successful",
             error: false,
             statusCode: HttpStatus.OK,
             data

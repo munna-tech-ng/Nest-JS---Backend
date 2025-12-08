@@ -6,7 +6,7 @@ import { AuthUser } from "../../domain/entities/auth-user.entity";
 import { Email } from "../../domain/value-objects/email.vo";
 import { FirebaseAdminService } from "../providers/firebase-admin.service";
 import { randomUUID } from "crypto";
-import { UserNotFoundException, UserAlreadyExistsException, FirebaseUserEmailNotFoundException } from "../../domain/exceptions/auth.exceptions";
+import { UserNotFoundException, FirebaseUserEmailNotFoundException } from "../../domain/exceptions/auth.exceptions";
 
 @Injectable()
 export class FirebaseAuthMethod implements AuthMethodPort {
@@ -23,7 +23,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const firebaseUser = await this.firebaseAdmin.verifyIdToken(payload.idToken);
         
         if (!firebaseUser.email) {
-            throw new FirebaseUserEmailNotFoundException();
+            throw new UserNotFoundException();
         }
 
         // Find user by email in database
@@ -49,17 +49,34 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const email = Email.create(firebaseUser.email);
         const existingUser = await this.users.findByEmail(email);
         
+        // when user already exists then return the user
         if (existingUser) {
-            throw new UserAlreadyExistsException(firebaseUser.email);
+            existingUser.isExistingUser = true;
+            return existingUser;
         }
 
         const userName = firebaseUser.name ?? "User";
 
         // Create new user
-        const user = new AuthUser(randomUUID(), email, userName, false, null, "firebase");
-        // Firebase handles authentication, so no password hash needed
-        await this.users.save(user, null);
+        const user = new AuthUser(randomUUID(), email, userName, false, null, "firebase", false);
+        
+        // generate password hash
+        const passwordHash = await this.users.generatePasswordHash();
+
+        // get the profile picture from firebase
+        const profilePicture = this.getFirebaseProfilePicture(firebaseUser);
+
+        // store user
+        await this.users.save(user, passwordHash, firebaseUser.firebase?.sign_in_provider ?? "firebase", firebaseUser.uid ?? "", profilePicture);
 
         return user;
+    }
+
+    private getFirebaseProfilePicture(firebaseUser: any): string | null {
+        let profile = firebaseUser.picture;
+        if (profile) {
+            profile = profile.replace("=s96-c", "=s256-c");
+        }
+        return profile;
     }
 }

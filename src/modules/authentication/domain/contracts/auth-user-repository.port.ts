@@ -6,6 +6,7 @@ export interface AuthUserRepositoryPort {
   findByEmail(email: Email): Promise<AuthUser | null>;
   findByCode(code: string): Promise<AuthUser | null>;
   getPasswordHashByEmail(email: Email): Promise<string | null>;
-  save(user: AuthUser, passwordHash?: string | null): Promise<void>;
+  generatePasswordHash(password?: string): Promise<string>;
+  save(user: AuthUser, passwordHash?: string | null, provider?: string, providerId?: string, avatar?: string | null): Promise<void>;
 }
 export const AUTH_USER_REPO = "AUTH_USER_REPOSITORY_PORT";
