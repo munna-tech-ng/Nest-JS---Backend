@@ -3,8 +3,9 @@ import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
 export const user = pgTable('users', {
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
-    email: text('email').notNull(),
+    email: text('email').notNull().unique(),
     is_guest: boolean('is_guest').default(false),
+    phone: text("phone").unique(),
     code: text("code").default(""),
     password: text('password').notNull(),
     avatar: text("avatar").default(""),

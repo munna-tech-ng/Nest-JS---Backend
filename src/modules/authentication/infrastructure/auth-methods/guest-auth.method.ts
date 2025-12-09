@@ -22,7 +22,7 @@ export class GuestAuthMethod implements AuthMethodPort {
         const guestCode = Email.create(randomUUID() + "@guest.com");
         const passwordHash: string = await this.users.generatePasswordHash(randomUUID().toString());
         const user = new AuthUser(randomUUID(), guestCode, userName, true, null, "guest");
-        await this.users.save(user, passwordHash, "guest", randomUUID().toString(), null);
+        await this.users.save({ user, passwordHash, provider: "guest", providerId: randomUUID().toString() });
         return user;
     }
 }

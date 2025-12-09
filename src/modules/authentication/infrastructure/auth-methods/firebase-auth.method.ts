@@ -21,7 +21,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
     async login(payload: { idToken: string }): Promise<AuthUser> {
         // Verify Firebase ID token and get user information
         const firebaseUser = await this.firebaseAdmin.verifyIdToken(payload.idToken);
-        
+
         if (!firebaseUser.email) {
             throw new UserNotFoundException();
         }
@@ -29,7 +29,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         // Find user by email in database
         const email = Email.create(firebaseUser.email);
         const user = await this.users.findByEmail(email);
-        
+
         if (!user) {
             throw new UserNotFoundException();
         }
@@ -40,7 +40,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
     async register(payload: { idToken: string }): Promise<AuthUser> {
         // Verify Firebase ID token and get user information
         const firebaseUser = await this.firebaseAdmin.verifyIdToken(payload.idToken);
-        
+
         if (!firebaseUser.email) {
             throw new FirebaseUserEmailNotFoundException();
         }
@@ -48,7 +48,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         // Check if user already exists
         const email = Email.create(firebaseUser.email);
         const existingUser = await this.users.findByEmail(email);
-        
+
         // when user already exists then return the user
         if (existingUser) {
             existingUser.isExistingUser = true;
@@ -59,7 +59,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
 
         // Create new user
         const user = new AuthUser(randomUUID(), email, userName, false, null, "firebase", false);
-        
+
         // generate password hash
         const passwordHash = await this.users.generatePasswordHash();
 
@@ -67,7 +67,7 @@ export class FirebaseAuthMethod implements AuthMethodPort {
         const profilePicture = this.getFirebaseProfilePicture(firebaseUser);
 
         // store user
-        await this.users.save(user, passwordHash, firebaseUser.firebase?.sign_in_provider ?? "firebase", firebaseUser.uid ?? "", profilePicture);
+        await this.users.save({ user, passwordHash, provider: firebaseUser.firebase?.sign_in_provider ?? "firebase", providerId: firebaseUser.uid ?? "", avatar: profilePicture });
 
         return user;
     }

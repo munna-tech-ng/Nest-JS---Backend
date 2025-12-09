@@ -5,7 +5,7 @@ import { DeviceDto } from "./device.dto";
 export class RegisterRequestDto {
     @ApiProperty({
         description: "Authentication method type",
-        enum: ["email", "firebase", "code", "guest"],
+        enum: ["email", "firebase", "code", "guest", "phone"],
         example: "email",
     })
     method: AuthMethodType;
@@ -15,6 +15,7 @@ export class RegisterRequestDto {
         examples: {
             email: {
                 value: {
+                    name: "John Doe",
                     email: "user@example.com",
                     password: "securePassword123",
                 },
@@ -27,6 +28,15 @@ export class RegisterRequestDto {
             code: {
                 value: {
                     code: "premium-code-12345",
+                },
+            },
+            phone: {
+                value: {
+                    name: "John Doe",
+                    type: "otp",
+                    phone: "1234567890",
+                    password: "securePassword123",
+                    otp: "123456",
                 },
             },
         },

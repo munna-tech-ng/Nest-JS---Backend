@@ -26,6 +26,10 @@ export function LoginApiDocs() {
    - Payload: { isGuest: boolean }
    - Example: { method: "guest", payload: { isGuest: true } }
 
+5. **Phone Authentication** (method: "phone")
+   - Payload: { phone: string, otp: string, password: string }
+   - Example: { method: "phone", payload: { phone: "1234567890", otp: "123456", password: "securePassword123" } }
+
 **Optional:** Include device information for tracking and security.`,
         }),
         ApiBody({
@@ -85,6 +89,19 @@ export function LoginApiDocs() {
                         device: {
                             id: "device-uuid-12345",
                             platform: "web",
+                        },
+                    },
+                },
+                phone: {
+                    summary: "Phone Login",
+                    description: "Login with phone and password or otp",
+                    value: {
+                        method: "phone",
+                        type: "password",
+                        payload: { phone: "1234567890", otp: "123456", password: "securePassword123" },
+                        device: {
+                            id: "device-uuid-12345",
+                            platform: "ios",
                         },
                     },
                 },

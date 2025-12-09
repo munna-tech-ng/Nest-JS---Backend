@@ -1,6 +1,7 @@
 import { Email } from "../value-objects/email.vo";
+import { Phone } from "../value-objects/phone.vo";
 
-export type AuthProvider = "email" | "firebase" | "code" | "guest";
+export type AuthProvider = "email" | "firebase" | "code" | "guest" | "phone";
 
 export class AuthUser {
     constructor(
@@ -11,6 +12,7 @@ export class AuthUser {
         private _code: string | null,
         private _provider: AuthProvider,
         private _isExistingUser: boolean = false,
+        private _phone?: Phone | null,
     ) { }
 
     get id() {
@@ -43,5 +45,9 @@ export class AuthUser {
 
     set isExistingUser(value: boolean) {
         this._isExistingUser = value;
+    }
+
+    get phone() {
+        return this._phone;
     }
 }

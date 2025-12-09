@@ -18,6 +18,10 @@ export function RegisterApiDocs() {
    - Payload: { idToken: string }
    - Example: { method: "firebase", payload: { idToken: "firebase-id-token" } }
 
+3. **Phone Registration** (method: "phone")
+   - Payload: { phone: string, otp: string, password: string }
+   - Example: { method: "phone", payload: { phone: "1234567890", otp: "123456", password: "securePassword123" } }
+
 **Note:** After successful registration, the user will be automatically logged in and receive authentication tokens.
 
 **Optional:** Include device information for tracking and security.`,
@@ -52,6 +56,19 @@ export function RegisterApiDocs() {
                         device: {
                             id: "device-uuid-12345",
                             platform: "android",
+                        },
+                    },
+                },
+                phone: {
+                    summary: "Phone Registration",
+                    description: "Register with phone and password or otp",
+                    value: {
+                        method: "phone",
+                        type: "password",
+                        payload: { phone: "1234567890", otp: "123456", password: "securePassword123" },
+                        device: {
+                            id: "device-uuid-12345",
+                            platform: "ios",
                         },
                     },
                 },

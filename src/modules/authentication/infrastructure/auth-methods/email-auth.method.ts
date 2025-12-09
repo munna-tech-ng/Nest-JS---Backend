@@ -43,7 +43,7 @@ export class EmailAuthMethod implements AuthMethodPort {
 
         const passwordHash: string = await this.users.generatePasswordHash(password.value.toString());
         const user = new AuthUser(randomUUID(), email, payload.name, false, null, "email");
-        await this.users.save(user, passwordHash, "email", "", null);
+        await this.users.save({ user, passwordHash, provider: "email" });
         return user;
     }
 }

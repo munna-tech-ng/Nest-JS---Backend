@@ -9,6 +9,8 @@ import { Email } from "../../domain/value-objects/email.vo";
 import * as schema from "src/infra/db/schema";
 import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
+import { Phone } from "../../domain/value-objects/phone.vo";
+import { SaveUserPayload } from "../../domain/types/auth-method-type";
 
 @Injectable()
 export class AuthUserRepository implements AuthUserRepositoryPort {
@@ -48,6 +50,14 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
       return new AuthUser((row.id).toString(), Email.create(row.email), row.name, false, row.code, "code");
   }
 
+  async findByPhone(phone: Phone): Promise<AuthUser | null> {
+    const row = await this.db.query.user.findFirst({
+      where: eq(schema.user.phone, phone.value),
+    });
+    if (!row) return null;
+    return new AuthUser((row.id).toString(), Email.create(row.email), row.name, false, row.code, "phone", true, Phone.create(row.phone!));
+  }
+  
   async generatePasswordHash(password?: string): Promise<string> {
     // if password not provided then generate random string
     if (!password) {
@@ -56,16 +66,17 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
     return await bcrypt.hash(password, 10);
   }
   
-  async save(user: AuthUser, passwordHash?: string | null, provider?: string, providerId?: string, avatar?: string | null): Promise<void> {
+  async save(payload: SaveUserPayload): Promise<void> {
     await this.db.insert(schema.user).values({
-      name: user.name,
-      email: user.email?.value as string,
-      is_guest: user.isGuest ? true : false,
-      password: passwordHash ?? "",
-      code: user.code ?? "",
-      provider: provider ?? "",
-      provider_id: providerId ?? "",
-      avatar: avatar ?? "",
+      name: payload.user.name,
+      email: payload.user.email?.value as string,
+      is_guest: payload.user.isGuest ? true : false,
+      password: payload.passwordHash ?? "",
+      code: payload.user.code ?? "",
+      provider: payload.provider ?? "",
+      provider_id: payload.providerId ?? "",
+      avatar: payload.avatar ?? "",
+      phone: payload.phone?.value as string,
     });
   }
 }

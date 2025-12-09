@@ -70,8 +70,8 @@ export class AuthController {
         @Res({ passthrough: true }) response: FastifyReply,
     ): Promise<BaseMaper> {
         const registeredUser = await this.registerUseCase.execute({
-            method: body.method as Extract<AuthMethodType, "email" | "firebase">,
-            payload: body.payload as { email: string; password: string, name: string } | { idToken: string },
+            method: body.method as Extract<AuthMethodType, "email" | "firebase" | "phone">,
+            payload: body.payload as { email: string; password: string, name: string } | { idToken: string } | { name: string, phone: string, otp: string },
         });
 
         const generatedToken = await this.registerUseCase.generateToken(registeredUser);

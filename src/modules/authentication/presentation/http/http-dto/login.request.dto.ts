@@ -5,7 +5,7 @@ import { DeviceDto } from "./device.dto";
 export class LoginRequestDto {
     @ApiProperty({
         description: "Authentication method type. Available methods: email, firebase, code, guest",
-        enum: ["email", "firebase", "code", "guest"],
+        enum: ["email", "firebase", "code", "guest", "phone"],
         example: "email",
     })
     method: AuthMethodType;
@@ -15,7 +15,8 @@ export class LoginRequestDto {
         - email: { email: string, password: string }
         - firebase: { idToken: string }
         - code: { code: string }
-        - guest: { isGuest: boolean }`,
+        - guest: { isGuest: boolean }
+        - phone: { phone: string, otp: string, password: string }`,
         examples: {
             email: {
                 summary: "Email Authentication",
@@ -55,6 +56,19 @@ export class LoginRequestDto {
                     method: "guest",
                     payload: {
                         isGuest: true,
+                    },
+                },
+            },
+            phone: {
+                summary: "Phone Authentication",
+                description: "Login with phone and OTP",
+                value: {
+                    method: "phone",
+                    type: "password",
+                    payload: { phone: "1234567890", otp: "123456", password: "securePassword123" },
+                    device: {
+                        id: "device-uuid-12345",
+                        platform: "ios",
                     },
                 },
             },

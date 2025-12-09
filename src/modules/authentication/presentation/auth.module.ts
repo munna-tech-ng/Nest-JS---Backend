@@ -18,6 +18,7 @@ import { FirebaseAdminService } from "../infrastructure/providers/firebase-admin
 import { CookieService } from "../infrastructure/providers/cookie.service";
 import { PassportModule } from "@nestjs/passport";
 import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
+import { PhoneAuthMethod } from "../infrastructure/auth-methods/phone-auth.method";
 
 @Module({
     controllers: [AuthController],
@@ -45,7 +46,8 @@ import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
         FirebaseAuthMethod,
         CodeAuthMethod,
         GuestAuthMethod,
-
+        PhoneAuthMethod,
+        
         {
             provide: AUTH_METHODS,
             useFactory: (
@@ -53,8 +55,9 @@ import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
                 firebase: FirebaseAuthMethod,
                 code: CodeAuthMethod,
                 guest: GuestAuthMethod,
-            ) => [email, firebase, code, guest],
-            inject: [EmailAuthMethod, FirebaseAuthMethod, CodeAuthMethod, GuestAuthMethod],
+                phone: PhoneAuthMethod,
+            ) => [email, firebase, code, guest, phone],
+            inject: [EmailAuthMethod, FirebaseAuthMethod, CodeAuthMethod, GuestAuthMethod, PhoneAuthMethod],
         },
     ],
     exports: []

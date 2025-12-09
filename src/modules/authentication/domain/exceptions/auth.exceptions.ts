@@ -149,3 +149,17 @@ export class GuestFlagRequiredException extends BaseException {
         );
     }
 }
+
+export class InvalidPhoneNumberException extends BaseException {
+    constructor() {
+        super(
+            "Invalid phone number",
+            HttpStatus.BAD_REQUEST,
+            "Invalid credentials",
+            {
+                code: "INVALID_PHONE_CREDENTIALS",
+            },
+            false, // Don't log expected business exceptions
+        );
+    }
+}
