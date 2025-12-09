@@ -19,6 +19,9 @@ import { CookieService } from "../infrastructure/providers/cookie.service";
 import { PassportModule } from "@nestjs/passport";
 import { JwtStrategy } from "../infrastructure/guards/jwt.strategy";
 import { PhoneAuthMethod } from "../infrastructure/auth-methods/phone-auth.method";
+import { AuthUserService } from "../application/services/auth-user-service";
+import { AUTH_SERVICE } from "../domain/contracts/auth-service-port";
+import { AuthServiceRepository } from "../infrastructure/persistence/auth-service.repository";
 
 @Module({
     controllers: [AuthController],
@@ -47,7 +50,8 @@ import { PhoneAuthMethod } from "../infrastructure/auth-methods/phone-auth.metho
         CodeAuthMethod,
         GuestAuthMethod,
         PhoneAuthMethod,
-        
+        AuthUserService,
+
         {
             provide: AUTH_METHODS,
             useFactory: (
@@ -59,6 +63,11 @@ import { PhoneAuthMethod } from "../infrastructure/auth-methods/phone-auth.metho
             ) => [email, firebase, code, guest, phone],
             inject: [EmailAuthMethod, FirebaseAuthMethod, CodeAuthMethod, GuestAuthMethod, PhoneAuthMethod],
         },
+
+        {
+            provide: AUTH_SERVICE,
+            useClass: AuthServiceRepository,
+        }
     ],
     exports: []
 })
