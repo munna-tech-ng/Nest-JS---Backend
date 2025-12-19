@@ -37,9 +37,15 @@ async function bootstrap() {
 
     // Setup Swagger documentation
     const document = SwaggerModule.createDocument(app, swaggerConfig, swaggerOptions);
-    SwaggerModule.setup("api", app, document);
+    SwaggerModule.setup("api-docs", app, document);
 
     // Run the application
     await app.listen(process.env.PORT ?? 3001, "0.0.0.0");
 }
-bootstrap();
+
+bootstrap().then(() => {
+    console.log(`Server is running on  http://127.0.0.1:${process.env.PORT ?? 3001}`);
+}).catch((error) => {
+    console.error("Error starting server", error);
+    process.exit(1);
+});

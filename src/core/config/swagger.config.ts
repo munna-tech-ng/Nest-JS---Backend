@@ -1,8 +1,8 @@
 import { DocumentBuilder, SwaggerDocumentOptions } from "@nestjs/swagger";
 
 export const swaggerConfig = new DocumentBuilder()
-    .setTitle("Enova Auth Module")
-    .setDescription("The Enova Auth Module API description")
+    .setTitle("Backend 2.0")
+    .setDescription("The Backend 2.0 API description")
     .setVersion("1.0")
     .addBearerAuth(
         {

@@ -5,7 +5,7 @@ export class AppService {
   getHello() {
     return {
       time: new Date().toISOString(),
-      message: "Enova Auth Module"
+      message: "Backend 2.0"
     };
   }
 }
