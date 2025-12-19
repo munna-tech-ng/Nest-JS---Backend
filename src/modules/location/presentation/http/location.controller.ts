@@ -9,9 +9,15 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Headers,
 } from "@nestjs/common";
-import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from "@nestjs/swagger";
+import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiConsumes, ApiBody } from "@nestjs/swagger";
 import { BaseMaper } from "src/core/dto/base.maper.dto";
+import { Inject } from "@nestjs/common";
+import { FILE_UPLOAD_SERVICE } from "../../../filemanager/domain/contracts/file-upload-service.port";
+import { FileUploadServicePort } from "../../../filemanager/domain/contracts/file-upload-service.port";
+import { FastifyRequest } from "fastify";
 import { CreateLocationUseCase } from "../../application/use-cases/create-location.use-case";
 import { UpdateLocationUseCase } from "../../application/use-cases/update-location.use-case";
 import { DeleteLocationUseCase } from "../../application/use-cases/delete-location.use-case";
@@ -25,6 +31,7 @@ import { DeletePermanentMultipleLocationUseCase } from "../../application/use-ca
 import { CreateLocationRequestDto } from "./http-dto/create-location.request.dto";
 import { UpdateLocationRequestDto } from "./http-dto/update-location.request.dto";
 import { DeleteMultipleLocationRequestDto } from "./http-dto/delete-multiple.request.dto";
+import { UpdateFlagRequestDto } from "./http-dto/update-flag.request.dto";
 import { LocationMapper } from "./http-dto/location.mapper";
 
 @ApiTags("Locations")
@@ -41,6 +48,8 @@ export class LocationController {
     private readonly restoreMultipleLocationUseCase: RestoreMultipleLocationUseCase,
     private readonly deletePermanentLocationUseCase: DeletePermanentLocationUseCase,
     private readonly deletePermanentMultipleLocationUseCase: DeletePermanentMultipleLocationUseCase,
+    @Inject(FILE_UPLOAD_SERVICE)
+    private readonly fileUploadService: FileUploadServicePort,
   ) {}
 
   @Post()
@@ -54,6 +63,168 @@ export class LocationController {
       error: false,
       statusCode: HttpStatus.CREATED,
       data: LocationMapper.toDto(location),
+    };
+  }
+
+  @Post(":id/flag")
+  @ApiOperation({ 
+    summary: "Upload or set flag for a location",
+    description: "Accepts either:\n1. multipart/form-data: Upload a flag image file\n2. application/json: Set flag path/URL directly\n\nExample JSON: { \"flag\": \"uploads/flags/abc123.jpg\" }"
+  })
+  @ApiConsumes("multipart/form-data", "application/json")
+  @ApiBody({
+    description: "For multipart: Flag image file. For JSON: { \"flag\": \"path/to/flag.jpg\" }",
+    schema: {
+      oneOf: [
+        {
+          type: "object",
+          properties: {
+            flag: {
+              type: "string",
+              format: "binary",
+              description: "Flag image file",
+            },
+          },
+        },
+        {
+          type: "object",
+          properties: {
+            flag: {
+              type: "string",
+              example: "uploads/flags/abc123.jpg",
+              description: "Flag path or URL",
+            },
+          },
+        },
+      ],
+    },
+    required: false,
+  })
+  @ApiResponse({ status: 200, description: "Flag uploaded/set successfully" })
+  @ApiQuery({ name: "queue", required: false, type: Boolean, description: "Queue the upload for background processing (multipart only)" })
+  async uploadFlag(
+    @Param("id", ParseIntPipe) id: number,
+    @Query("queue") queue?: string,
+    @Body() body?: UpdateFlagRequestDto,
+    @Req() req?: FastifyRequest,
+    @Headers("content-type") contentType?: string,
+  ): Promise<BaseMaper> {
+    const fastifyRequest = req as any;
+    const isMultipart = contentType?.includes("multipart/form-data") || fastifyRequest?.isMultipart;
+    
+    // Handle JSON request (application/json)
+    if (!isMultipart) {
+      if (body?.flag) {
+        // Update location with provided flag path/URL
+        const location = await this.updateLocationUseCase.execute(id, {
+          flag: body.flag,
+        });
+
+        return {
+          title: "Flag Updated",
+          message: "Flag has been updated successfully",
+          error: false,
+          statusCode: HttpStatus.OK,
+          data: {
+            location: LocationMapper.toDto(location),
+            flag: {
+              path: body.flag,
+            },
+          },
+        };
+      } else {
+        // JSON request but no flag provided
+        return {
+          title: "Upload Failed",
+          message: "Request must be multipart/form-data for file upload or application/json with flag path in body",
+          error: true,
+          statusCode: HttpStatus.BAD_REQUEST,
+          data: null,
+        };
+      }
+    }
+
+    // Handle multipart/form-data (file upload)
+    // Only call file() if we're sure it's multipart
+    let data;
+    try {
+      data = await fastifyRequest.file();
+    } catch {
+      return {
+        title: "Upload Failed",
+        message: "Failed to process multipart request. Please ensure the request is multipart/form-data.",
+        error: true,
+        statusCode: HttpStatus.BAD_REQUEST,
+        data: null,
+      };
+    }
+    
+    if (!data) {
+      return {
+        title: "Upload Failed",
+        message: "No file provided",
+        error: true,
+        statusCode: HttpStatus.BAD_REQUEST,
+        data: null,
+      };
+    }
+
+    // Handle Fastify stream upload for queued uploads
+    let fileData: Buffer | NodeJS.ReadableStream;
+    let fileSize = 0;
+    
+    if (queue === "true") {
+      // Use stream for queued uploads
+      fileData = data.file;
+      // For queued uploads, we'll need to read the stream to get size
+      // But we'll pass 0 and let the processor handle it
+      fileSize = 0;
+    } else {
+      // Convert stream to buffer for immediate upload
+      const chunks: Buffer[] = [];
+      for await (const chunk of data.file) {
+        chunks.push(chunk);
+      }
+      fileData = Buffer.concat(chunks);
+      fileSize = fileData.length;
+    }
+
+    // Upload flag image
+    const uploadResult = await this.fileUploadService.uploadFile(
+      {
+        filename: data.filename,
+        data: fileData,
+        mimetype: data.mimetype,
+        size: fileSize,
+        originalName: data.filename,
+      },
+      {
+        queue: queue === "true",
+        folder: "flags",
+        subfolder: "",
+      }
+    );
+
+    // Update location with flag path
+    const location = await this.updateLocationUseCase.execute(id, {
+      flag: uploadResult.path,
+    });
+
+    return {
+      title: uploadResult.queued ? "Flag Queued" : "Flag Uploaded",
+      message: uploadResult.queued 
+        ? "Flag has been queued for upload" 
+        : "Flag has been uploaded and location updated successfully",
+      error: false,
+      statusCode: HttpStatus.OK,
+      data: {
+        location: LocationMapper.toDto(location),
+        flag: {
+          filename: uploadResult.filename,
+          path: uploadResult.path,
+          queued: uploadResult.queued,
+        },
+      },
     };
   }
 

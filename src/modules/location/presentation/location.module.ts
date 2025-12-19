@@ -25,8 +25,10 @@ import { LOCATION_REPO } from "../domain/contracts/location-repository.port";
 import { LocationRepository } from "../infrastructure/persistence/location.repository";
 import { SPECIAL_LOCATION_REPO } from "../domain/contracts/special-location-repository.port";
 import { SpecialLocationRepository } from "../infrastructure/persistence/special-location.repository";
+import { FileManagerModule } from "../../filemanager/presentation/filemanager.module";
 
 @Module({
+  imports: [FileManagerModule],
   controllers: [LocationController, SpecialLocationController],
   providers: [
     CreateLocationUseCase,

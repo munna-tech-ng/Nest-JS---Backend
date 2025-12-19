@@ -10,10 +10,13 @@ import { LocationModule } from './modules/location/presentation/location.module'
 import { OsModule } from './modules/os/presentation/os.module';
 import { TagModule } from './modules/tag/presentation/tag.module';
 import { ServerModule } from './modules/server/presentation/server.module';
+import { QueueModule } from './infra/queue/queue.module';
+import { FileManagerModule } from './modules/filemanager/presentation/filemanager.module';
 
 @Module({
   imports: [
     DBModule,
+    QueueModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '.env.local'],
@@ -25,6 +28,7 @@ import { ServerModule } from './modules/server/presentation/server.module';
     OsModule,
     TagModule,
     ServerModule,
+    FileManagerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
