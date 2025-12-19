@@ -10,14 +10,13 @@ export class GetTagsUseCase {
   ) {}
 
   async execute(input: PaginationDto) {
-    const page = input.page ?? 1;
-    const limit = input.limit ?? 2;
-    const includeDeleted = input.includeDeleted ?? false;
-
     return await this.tagRepository.findAll({
-      page,
-      limit,
-      includeDeleted,
+      page: input.page,
+      limit: input.limit,
+      includeDeleted: input.includeDeleted,
+      isPaginate: input.isPaginate,
+      orderBy: input.orderBy,
+      sortOrder: input.sortOrder,
     });
   }
 }

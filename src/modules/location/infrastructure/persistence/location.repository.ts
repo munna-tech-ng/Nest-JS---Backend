@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql, asc, desc } from "drizzle-orm";
 import { LocationRepositoryPort } from "../../domain/contracts/location-repository.port";
 import { Location } from "../../domain/entities/location.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
@@ -61,17 +61,46 @@ export class LocationRepository implements LocationRepositoryPort {
   async findAll(options: {
     page?: number;
     limit?: number;
+    isPaginate?: boolean;
+    orderBy?: string;
+    sortOrder?: "asc" | "desc";
   }): Promise<{ items: Location[]; total: number; page: number; limit: number }> {
     const page = options.page ?? 1;
-    const limit = options.limit ?? 2;
-    const offset = (page - 1) * limit;
+    const limit = options.limit ?? 20;
+    const isPaginate = options.isPaginate ?? true;
+    const orderBy = options.orderBy ?? "createdAt";
+    const sortOrder = options.sortOrder ?? "desc";
+
+    const orderFn = sortOrder === "asc" ? asc : desc;
+    let orderByClause: any[];
+    switch (orderBy) {
+      case "name":
+        orderByClause = [orderFn(schema.location.name)];
+        break;
+      case "code":
+        orderByClause = [orderFn(schema.location.code)];
+        break;
+      case "createdAt":
+        orderByClause = [orderFn(schema.location.createdAt)];
+        break;
+      case "updatedAt":
+        orderByClause = [orderFn(schema.location.updatedAt)];
+        break;
+      default:
+        orderByClause = [orderFn(schema.location.createdAt)];
+    }
+
+    const queryOptions: any = {
+      orderBy: orderByClause,
+    };
+
+    if (isPaginate) {
+      queryOptions.limit = limit;
+      queryOptions.offset = (page - 1) * limit;
+    }
 
     const [items, totalResult] = await Promise.all([
-      this.db.query.location.findMany({
-        limit,
-        offset,
-        orderBy: (location, { desc }) => [desc(location.createdAt)],
-      }),
+      this.db.query.location.findMany(queryOptions),
       this.db
         .select({ count: sql<number>`count(*)` })
         .from(schema.location),
@@ -80,8 +109,8 @@ export class LocationRepository implements LocationRepositoryPort {
     return {
       items: items.map((item) => Location.fromSchema(item)),
       total: Number(totalResult[0]?.count ?? 0),
-      page,
-      limit,
+      page: isPaginate ? page : 1,
+      limit: isPaginate ? limit : items.length,
     };
   }
 

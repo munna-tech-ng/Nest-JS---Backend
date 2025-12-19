@@ -10,12 +10,12 @@ export class GetLocationsUseCase {
   ) {}
 
   async execute(input: PaginationDto) {
-    const page = input.page ?? 1;
-    const limit = input.limit ?? 2;
-
     return await this.locationRepository.findAll({
-      page,
-      limit,
+      page: input.page,
+      limit: input.limit,
+      isPaginate: input.isPaginate,
+      orderBy: input.orderBy,
+      sortOrder: input.sortOrder,
     });
   }
 }

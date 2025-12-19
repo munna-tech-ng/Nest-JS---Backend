@@ -10,13 +10,13 @@ export class GetSpecialLocationsUseCase {
   ) {}
 
   async execute(input: PaginationDto & { locationId?: number }) {
-    const page = input.page ?? 1;
-    const limit = input.limit ?? 2;
-
     return await this.specialLocationRepository.findAll({
-      page,
-      limit,
+      page: input.page,
+      limit: input.limit,
       locationId: input.locationId,
+      isPaginate: input.isPaginate,
+      orderBy: input.orderBy,
+      sortOrder: input.sortOrder,
     });
   }
 }

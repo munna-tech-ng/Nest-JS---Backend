@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql, asc, desc } from "drizzle-orm";
 import { SpecialLocationRepositoryPort } from "../../domain/contracts/special-location-repository.port";
 import { SpecialLocation } from "../../domain/entities/special-location.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
@@ -56,22 +56,48 @@ export class SpecialLocationRepository implements SpecialLocationRepositoryPort 
     page?: number;
     limit?: number;
     locationId?: number;
+    isPaginate?: boolean;
+    orderBy?: string;
+    sortOrder?: "asc" | "desc";
   }): Promise<{ items: SpecialLocation[]; total: number; page: number; limit: number }> {
     const page = options.page ?? 1;
-    const limit = options.limit ?? 2;
-    const offset = (page - 1) * limit;
+    const limit = options.limit ?? 20;
+    const isPaginate = options.isPaginate ?? true;
+    const orderBy = options.orderBy ?? "createdAt";
+    const sortOrder = options.sortOrder ?? "desc";
 
     const conditions = options.locationId
       ? eq(schema.special_location.location_id, options.locationId)
       : undefined;
 
+    const orderFn = sortOrder === "asc" ? asc : desc;
+    let orderByClause: any[];
+    switch (orderBy) {
+      case "type":
+        orderByClause = [orderFn(schema.special_location.type)];
+        break;
+      case "createdAt":
+        orderByClause = [orderFn(schema.special_location.createdAt)];
+        break;
+      case "updatedAt":
+        orderByClause = [orderFn(schema.special_location.updatedAt)];
+        break;
+      default:
+        orderByClause = [orderFn(schema.special_location.createdAt)];
+    }
+
+    const queryOptions: any = {
+      where: conditions,
+      orderBy: orderByClause,
+    };
+
+    if (isPaginate) {
+      queryOptions.limit = limit;
+      queryOptions.offset = (page - 1) * limit;
+    }
+
     const [items, totalResult] = await Promise.all([
-      this.db.query.special_location.findMany({
-        where: conditions,
-        limit,
-        offset,
-        orderBy: (specialLocation, { desc }) => [desc(specialLocation.createdAt)],
-      }),
+      this.db.query.special_location.findMany(queryOptions),
       this.db
         .select({ count: sql<number>`count(*)` })
         .from(schema.special_location)
@@ -81,8 +107,8 @@ export class SpecialLocationRepository implements SpecialLocationRepositoryPort 
     return {
       items: items.map((item) => SpecialLocation.fromSchema(item)),
       total: Number(totalResult[0]?.count ?? 0),
-      page,
-      limit,
+      page: isPaginate ? page : 1,
+      limit: isPaginate ? limit : items.length,
     };
   }
 

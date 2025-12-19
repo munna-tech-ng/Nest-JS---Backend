@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, sql, asc, desc } from "drizzle-orm";
 import { OsRepositoryPort } from "../../domain/contracts/os-repository.port";
 import { Os } from "../../domain/entities/os.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
@@ -62,21 +62,50 @@ export class OsRepository implements OsRepositoryPort {
     page?: number;
     limit?: number;
     includeDeleted?: boolean;
+    isPaginate?: boolean;
+    orderBy?: string;
+    sortOrder?: "asc" | "desc";
   }): Promise<{ items: Os[]; total: number; page: number; limit: number }> {
     const page = options.page ?? 1;
-    const limit = options.limit ?? 2;
-    const offset = (page - 1) * limit;
+    const limit = options.limit ?? 20;
+    const isPaginate = options.isPaginate ?? true;
     const includeDeleted = options.includeDeleted ?? false;
+    const orderBy = options.orderBy ?? "createdAt";
+    const sortOrder = options.sortOrder ?? "desc";
 
     const conditions = includeDeleted ? undefined : eq(schema.os.is_deleted, false);
 
+    const orderFn = sortOrder === "asc" ? asc : desc;
+    let orderByClause: any[];
+    switch (orderBy) {
+      case "name":
+        orderByClause = [orderFn(schema.os.name)];
+        break;
+      case "code":
+        orderByClause = [orderFn(schema.os.code)];
+        break;
+      case "createdAt":
+        orderByClause = [orderFn(schema.os.createdAt)];
+        break;
+      case "updatedAt":
+        orderByClause = [orderFn(schema.os.updatedAt)];
+        break;
+      default:
+        orderByClause = [orderFn(schema.os.createdAt)];
+    }
+
+    const queryOptions: any = {
+      where: conditions,
+      orderBy: orderByClause,
+    };
+
+    if (isPaginate) {
+      queryOptions.limit = limit;
+      queryOptions.offset = (page - 1) * limit;
+    }
+
     const [items, totalResult] = await Promise.all([
-      this.db.query.os.findMany({
-        where: conditions,
-        limit,
-        offset,
-        orderBy: (os, { desc }) => [desc(os.createdAt)],
-      }),
+      this.db.query.os.findMany(queryOptions),
       this.db
         .select({ count: sql<number>`count(*)` })
         .from(schema.os)
@@ -86,8 +115,8 @@ export class OsRepository implements OsRepositoryPort {
     return {
       items: items.map((item) => Os.fromSchema(item)),
       total: Number(totalResult[0]?.count ?? 0),
-      page,
-      limit,
+      page: isPaginate ? page : 1,
+      limit: isPaginate ? limit : items.length,
     };
   }
 

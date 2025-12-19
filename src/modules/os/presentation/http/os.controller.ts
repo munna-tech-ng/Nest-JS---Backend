@@ -124,17 +124,26 @@ export class OsController {
   @ApiOperation({ summary: "Get all OS with pagination" })
   @ApiResponse({ status: 200, description: "OS retrieved successfully" })
   @ApiQuery({ name: "page", required: false, type: Number, example: 1 })
-  @ApiQuery({ name: "limit", required: false, type: Number, example: 2 })
+  @ApiQuery({ name: "limit", required: false, type: Number, example: 20 })
   @ApiQuery({ name: "includeDeleted", required: false, type: Boolean })
+  @ApiQuery({ name: "isPaginate", required: false, type: Boolean, example: true })
+  @ApiQuery({ name: "orderBy", required: false, type: String, example: "createdAt", enum: ["name", "code", "createdAt", "updatedAt"] })
+  @ApiQuery({ name: "sortOrder", required: false, type: String, example: "desc", enum: ["asc", "desc"] })
   async getAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("includeDeleted") includeDeleted?: string,
+    @Query("isPaginate") isPaginate?: string,
+    @Query("orderBy") orderBy?: string,
+    @Query("sortOrder") sortOrder?: string,
   ): Promise<BaseMaper> {
     const result = await this.getOsesUseCase.execute({
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
       includeDeleted: includeDeleted === "true",
+      isPaginate: isPaginate !== "false",
+      orderBy: orderBy,
+      sortOrder: sortOrder === "asc" ? "asc" : "desc",
     });
     return {
       title: "OS Retrieved",

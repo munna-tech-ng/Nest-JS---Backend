@@ -4,7 +4,7 @@ export interface SpecialLocationRepositoryPort {
   create(data: { locationId: number; type: string }): Promise<SpecialLocation>;
   update(id: number, data: { locationId?: number; type?: string }): Promise<SpecialLocation>;
   findById(id: number): Promise<SpecialLocation | null>;
-  findAll(options: { page?: number; limit?: number; locationId?: number }): Promise<{ items: SpecialLocation[]; total: number; page: number; limit: number }>;
+  findAll(options: { page?: number; limit?: number; locationId?: number; isPaginate?: boolean; orderBy?: string; sortOrder?: "asc" | "desc" }): Promise<{ items: SpecialLocation[]; total: number; page: number; limit: number }>;
   delete(id: number): Promise<void>;
   deleteMultiple(ids: number[]): Promise<void>;
   restore(id: number): Promise<void>;

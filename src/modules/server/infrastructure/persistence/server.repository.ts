@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, sql, asc, desc } from "drizzle-orm";
 import { ServerRepositoryPort } from "../../domain/contracts/server-repository.port";
 import { Server } from "../../domain/entities/server.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
@@ -150,21 +150,53 @@ export class ServerRepository implements ServerRepositoryPort {
     page?: number;
     limit?: number;
     includeDeleted?: boolean;
+    isPaginate?: boolean;
+    orderBy?: string;
+    sortOrder?: "asc" | "desc";
   }): Promise<{ items: Server[]; total: number; page: number; limit: number }> {
     const page = options.page ?? 1;
-    const limit = options.limit ?? 2;
-    const offset = (page - 1) * limit;
+    const limit = options.limit ?? 20;
+    const isPaginate = options.isPaginate ?? true;
     const includeDeleted = options.includeDeleted ?? false;
+    const orderBy = options.orderBy ?? "createdAt";
+    const sortOrder = options.sortOrder ?? "desc";
 
     const conditions = includeDeleted ? undefined : eq(schema.server.is_deleted, false);
 
+    const orderFn = sortOrder === "asc" ? asc : desc;
+    let orderByClause: any[];
+    switch (orderBy) {
+      case "name":
+        orderByClause = [orderFn(schema.server.name)];
+        break;
+      case "ip":
+        orderByClause = [orderFn(schema.server.ip)];
+        break;
+      case "status":
+        orderByClause = [orderFn(schema.server.status)];
+        break;
+      case "createdAt":
+        orderByClause = [orderFn(schema.server.createdAt)];
+        break;
+      case "updatedAt":
+        orderByClause = [orderFn(schema.server.updatedAt)];
+        break;
+      default:
+        orderByClause = [orderFn(schema.server.createdAt)];
+    }
+
+    const queryOptions: any = {
+      where: conditions,
+      orderBy: orderByClause,
+    };
+
+    if (isPaginate) {
+      queryOptions.limit = limit;
+      queryOptions.offset = (page - 1) * limit;
+    }
+
     const [items, totalResult] = await Promise.all([
-      this.db.query.server.findMany({
-        where: conditions,
-        limit,
-        offset,
-        orderBy: (server, { desc }) => [desc(server.createdAt)],
-      }),
+      this.db.query.server.findMany(queryOptions),
       this.db
         .select({ count: sql<number>`count(*)` })
         .from(schema.server)
@@ -174,8 +206,8 @@ export class ServerRepository implements ServerRepositoryPort {
     return {
       items: items.map((item) => Server.fromSchema(item)),
       total: Number(totalResult[0]?.count ?? 0),
-      page,
-      limit,
+      page: isPaginate ? page : 1,
+      limit: isPaginate ? limit : items.length,
     };
   }
 
