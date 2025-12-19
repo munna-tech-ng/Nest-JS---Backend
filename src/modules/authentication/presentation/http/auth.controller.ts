@@ -38,6 +38,7 @@ export class AuthController {
         @Res({ passthrough: true }) response: FastifyReply,
     ): Promise<BaseMaper> {
         const result = await this.loginUseCase.execute(body);
+        
         const data = {
             accessToken: result.accessToken,
             refreshToken: result.refreshToken,
