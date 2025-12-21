@@ -4,6 +4,7 @@ import { SwaggerModule } from "@nestjs/swagger";
 import { GlobalExceptionFilter } from "./core/exceptions/global-exception.filter";
 import { swaggerConfig, swaggerOptions } from "./core/config/swagger.config";
 import { corsConfig } from "./core/config/cors.config";
+import { multipartConfig } from "./core/config/multipart.config";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { join } from "path";
 import fastifyCors from "@fastify/cors";
@@ -23,8 +24,8 @@ async function bootstrap() {
     // Register cookie plugin
     await app.register(fastifyCookie);
 
-    // Configure Fastify to parse multipart/form-data
-    await app.register(fastifyMultipart);
+    // Configure Fastify to parse multipart/form-data with config
+    await app.register(fastifyMultipart, multipartConfig);
 
     // Use public as asset directory
     await app.register(fastifyStatic, {

@@ -52,13 +52,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
         // Handle generic Error
         else if (exception instanceof Error) {
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-            title = "Internal Server Error";
-            message = exception.message || "An unexpected error occurred";
-            errorData = {
-                code: "INTERNAL_SERVER_ERROR",
-                name: exception.name,
-            };
+            // Check if this is a Fastify multipart error (client error, not server error)
+            const isFastifyMultipartError = 
+                exception.message?.includes("the request is not multipart") ||
+                (exception.name === "FastifyError" && exception.message?.includes("multipart"));
+            
+            if (isFastifyMultipartError) {
+                statusCode = HttpStatus.BAD_REQUEST;
+                title = "Bad Request";
+                message = "Request must be multipart/form-data for file upload";
+                errorData = {
+                    code: "INVALID_CONTENT_TYPE",
+                    name: exception.name,
+                };
+            } else {
+                statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+                title = "Internal Server Error";
+                message = exception.message || "An unexpected error occurred";
+                errorData = {
+                    code: "INTERNAL_SERVER_ERROR",
+                    name: exception.name,
+                };
+            }
         }
         // Handle unknown errors
         else {
@@ -70,13 +85,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             };
         }
 
+        // Check if this is a Fastify multipart error (expected when non-multipart request tries to use file())
+        const isFastifyMultipartError = 
+            exception instanceof Error &&
+            (exception.message?.includes("the request is not multipart") ||
+             exception.name === "FastifyError" && exception.message?.includes("multipart"));
+
         // Log only unexpected errors (5xx) or exceptions that explicitly should be logged
         const shouldLog = 
             exception instanceof BaseException 
                 ? exception.shouldLog 
                 : statusCode >= HttpStatus.INTERNAL_SERVER_ERROR;
 
-        if (shouldLog) {
+        if (isFastifyMultipartError) {
+            // Log Fastify multipart errors as info (expected behavior when content-type doesn't match)
+            this.logger.debug(
+                `Multipart request expected but received ${request.headers['content-type'] || 'unknown content-type'}: ${message} - ${request.method} ${request.url}`,
+            );
+        } else if (shouldLog) {
             this.logger.error(
                 `${title}: ${message}`,
                 exception instanceof Error ? exception.stack : undefined,

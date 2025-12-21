@@ -15,5 +15,5 @@ export default registerAs('queue_config', () => ({
     },
 }));
 
-export const FILE_UPLOAD_QUEUE = "file-upload-queue";
+export const FILE_UPLOAD_QUEUE = "backendv2-file-upload-queue";
 

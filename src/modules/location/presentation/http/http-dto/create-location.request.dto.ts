@@ -22,9 +22,9 @@ export class CreateLocationRequestDto {
   @IsOptional()
   lng?: string;
 
-  @ApiProperty({ description: "Flag emoji", example: "🇺🇸", required: false })
-  @IsString()
+  @ApiProperty({ description: "Flag emoji", required: false, type: 'string', format: 'binary' })
+  // binary type because it can be a string or a file
   @IsOptional()
-  flag?: string;
+  flag?: any; // any type because it can be a string or a file
 }
 

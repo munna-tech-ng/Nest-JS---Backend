@@ -14,14 +14,17 @@ export class LocationRepository implements LocationRepositoryPort {
   ) {}
 
   async create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {
+    // Ensure flag is always a string (path), not binary data or Buffer
+    const flagValue = typeof data.flag === 'string' ? data.flag : (data.flag ? String(data.flag) : '');
+    
     const [result] = await this.db
       .insert(schema.location)
       .values({
         name: data.name,
-        code: data.code,
+        code: data.code.toLowerCase(),
         lat: data.lat ?? "",
         lng: data.lng ?? "",
-        flag: data.flag ?? "",
+        flag: flagValue,
       })
       .returning();
 
@@ -31,7 +34,7 @@ export class LocationRepository implements LocationRepositoryPort {
   async update(id: number, data: { name?: string; code?: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.code !== undefined) updateData.code = data.code;
+    if (data.code !== undefined) updateData.code = data.code.toLowerCase();
     if (data.lat !== undefined) updateData.lat = data.lat;
     if (data.lng !== undefined) updateData.lng = data.lng;
     if (data.flag !== undefined) updateData.flag = data.flag;
@@ -55,6 +58,20 @@ export class LocationRepository implements LocationRepositoryPort {
       where: eq(schema.location.id, id),
     });
 
+    return result ? Location.fromSchema(result) : null;
+  }
+
+  async findByName(name: string): Promise<Location | null> {
+    const result = await this.db.query.location.findFirst({
+      where: eq(schema.location.name, name),
+    });
+    return result ? Location.fromSchema(result) : null;
+  }
+
+  async findByCode(code: string): Promise<Location | null> {
+    const result = await this.db.query.location.findFirst({
+      where: eq(schema.location.code, code.toLowerCase()),
+    });
     return result ? Location.fromSchema(result) : null;
   }
 

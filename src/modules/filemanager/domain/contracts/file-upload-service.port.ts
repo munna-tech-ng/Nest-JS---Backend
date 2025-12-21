@@ -1,4 +1,3 @@
-import { UploadedFile } from "../entities/uploaded-file.entity";
 
 export interface FileUploadServicePort {
   uploadFile(

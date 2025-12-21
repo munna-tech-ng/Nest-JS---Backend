@@ -1,14 +1,15 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { StoragePort } from "../../domain/contracts/storage.port";
 import { UploadedFile } from "../../domain/entities/uploaded-file.entity";
 import { createWriteStream, existsSync, mkdirSync } from "fs";
-import { unlink } from "fs/promises";
+import { unlink, writeFile } from "fs/promises";
 import { join } from "path";
 import { pipeline } from "stream/promises";
 
 @Injectable()
 export class LocalStorageProvider implements StoragePort {
   private readonly basePath: string;
+  private readonly logger = new Logger(LocalStorageProvider.name);
 
   constructor() {
     // Default to public/uploads directory
@@ -55,19 +56,17 @@ export class LocalStorageProvider implements StoragePort {
       // Double-check directory exists right before writing (in case of race conditions)
       this.ensureDirectoryExists(uploadPath);
       
+      this.logger.debug(`Writing file: ${filePath} (${file.size} bytes)`);
+      
       if (Buffer.isBuffer(file.data)) {
-        // Handle Buffer
-        const writeStream = createWriteStream(filePath);
-        writeStream.write(file.data);
-        writeStream.end();
-        await new Promise<void>((resolve, reject) => {
-          writeStream.on("finish", () => resolve());
-          writeStream.on("error", (err) => reject(err));
-        });
+        // Handle Buffer - use writeFile for simplicity and reliability
+        await writeFile(filePath, file.data);
+        this.logger.debug(`Buffer written successfully: ${filePath}`);
       } else {
         // Handle Stream
         const writeStream = createWriteStream(filePath);
         await pipeline(file.data, writeStream);
+        this.logger.debug(`Stream written successfully: ${filePath}`);
       }
 
       return new UploadedFile(
@@ -79,6 +78,7 @@ export class LocalStorageProvider implements StoragePort {
         new Date(),
       );
     } catch (error) {
+      this.logger.error(`Failed to upload file ${filePath}: ${error.message}`, error.stack);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
   }

@@ -12,21 +12,15 @@ export class CreateLocationUseCase {
   ) {}
 
   async execute(input: CreateLocationDto): Promise<Location> {
-    // Check if location with same name or code exists
-    const existing = await this.locationRepository.findAll({ page: 1, limit: 1000 });
-    const nameExists = existing.items.some(loc => loc.name.toLowerCase() === input.name.toLowerCase());
-    const codeExists = existing.items.some(loc => loc.code.toLowerCase() === input.code.toLowerCase());
-    
-    if (nameExists) {
-      throw new LocationAlreadyExistsException("name", input.name);
-    }
-    if (codeExists) {
+    // Validate required fields
+    const existing = await this.locationRepository.findByCode(input.code.toLowerCase());
+    if (existing) {
       throw new LocationAlreadyExistsException("code", input.code);
     }
 
     return await this.locationRepository.create({
       name: input.name,
-      code: input.code,
+      code: input.code.toLowerCase(),
       lat: input.lat,
       lng: input.lng,
       flag: input.flag,

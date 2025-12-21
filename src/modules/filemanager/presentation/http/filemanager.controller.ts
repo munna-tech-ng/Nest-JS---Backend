@@ -5,12 +5,14 @@ import {
   Post,
   Query,
   Req,
+  Body,
 } from "@nestjs/common";
 import { ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiBody } from "@nestjs/swagger";
 import { BaseMaper } from "src/core/dto/base.maper.dto";
 import { UploadFileUseCase } from "../../application/use-cases/upload-file.use-case";
 import { DeleteFileUseCase } from "../../application/use-cases/delete-file.use-case";
 import { FastifyRequest } from "fastify";
+import { getGenericValue, isMultipartRequest } from "src/core/utils/multipart.util";
 import { UploadFileResponseDto } from "./http-dto/upload-file.response.dto";
 import { UploadFileRequestDto } from "./http-dto/upload-file.request.dto";
 
@@ -30,18 +32,21 @@ export class FileManagerController {
     type: UploadFileRequestDto,
   })
   @ApiResponse({ status: 201, description: "File uploaded successfully", type: UploadFileResponseDto })
-  @ApiQuery({ name: "queue", required: false, type: Boolean, description: "Queue the upload for background processing" })
-  @ApiQuery({ name: "folder", required: false, type: String, description: "Folder name (e.g., 'flags', 'images')" })
-  @ApiQuery({ name: "subfolder", required: false, type: String, description: "Subfolder name" })
   async uploadFile(
-    @Query("queue") queue?: string,
-    @Query("folder") folder?: string,
-    @Query("subfolder") subfolder?: string,
+    @Body() body?: UploadFileRequestDto,
     @Req() req?: FastifyRequest,
   ): Promise<BaseMaper> {
-    const fastifyRequest = req as any;
-    
-    if (!fastifyRequest.isMultipart) {
+    if (!req) {
+      return {
+        title: "Upload Failed",
+        message: "Invalid request",
+        error: true,
+        statusCode: HttpStatus.BAD_REQUEST,
+        data: null,
+      };
+    }
+
+    if (!isMultipartRequest(req)) {
       return {
         title: "Upload Failed",
         message: "Request must be multipart/form-data",
@@ -51,9 +56,7 @@ export class FileManagerController {
       };
     }
 
-    const data = await fastifyRequest.file();
-    
-    if (!data) {
+    if (!body?.file) {
       return {
         title: "Upload Failed",
         message: "No file provided",
@@ -63,39 +66,28 @@ export class FileManagerController {
       };
     }
 
-    // Handle Fastify stream upload for queued uploads
-    let fileData: Buffer | NodeJS.ReadableStream;
-    let fileSize = 0;
-    
-    if (queue === "true") {
-      // Use stream for queued uploads
-      fileData = data.file;
-      // For queued uploads, we'll need to read the stream to get size
-      // But we'll pass 0 and let the processor handle it
-      fileSize = 0;
-    } else {
-      // Convert stream to buffer for immediate upload
-      const chunks: Buffer[] = [];
-      for await (const chunk of data.file) {
-        chunks.push(chunk);
-      }
-      fileData = Buffer.concat(chunks);
-      fileSize = fileData.length;
-    }
+    const fileBuffer = await body?.file.toBuffer();
+    // cover to mb
+    const fileSize = Number((fileBuffer.length / 1024 / 1024).toFixed(2));
 
+    const fileData = {
+      filename: body?.file.filename,
+      data: fileBuffer,
+      mimetype: body?.file.mimetype,
+      size: fileSize,
+      originalName: body?.file.filename,
+    };
+
+    const storageData = {
+      queue: getGenericValue<boolean>(body?.queue) ?? false,
+      folder: getGenericValue<string>(body?.folder) ?? "",
+      subfolder: getGenericValue<string>(body?.subfolder) ?? "",
+    };
+
+    // Upload file - service handles stream to buffer conversion
     const result = await this.uploadFileUseCase.execute(
-      {
-        filename: data.filename,
-        data: fileData,
-        mimetype: data.mimetype,
-        size: fileSize,
-        originalName: data.filename,
-      },
-      {
-        queue: queue === "true",
-        folder: folder,
-        subfolder: subfolder,
-      }
+      fileData,
+      storageData
     );
 
     return {
