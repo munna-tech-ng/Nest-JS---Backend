@@ -47,3 +47,17 @@ export class SpecialLocationNotFoundException extends BaseException {
   }
 }
 
+export class InvalidMultipartRequestException extends BaseException {
+  constructor(message?: string) {
+    super(
+      message ?? "Request must be multipart/form-data for file upload",
+      HttpStatus.BAD_REQUEST,
+      "Invalid Multipart Request",
+      {
+        code: "INVALID_MULTIPART_REQUEST",
+        message: message ?? "Request must be multipart/form-data for file upload",
+      },
+      false, // Don't log expected business exceptions
+    );
+  }
+}

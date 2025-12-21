@@ -1,8 +1,8 @@
 import { Location } from "../entities/location.entity";
 
 export interface LocationRepositoryPort {
-  create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location>;
-  update(id: number, data: { name?: string; code?: string; lat?: string; lng?: string; flag?: string }): Promise<Location>;
+  create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string | Buffer }): Promise<Location>;
+  update(id: number, data: { name?: string; code?: string; lat?: string; lng?: string; flag?: string | Buffer }): Promise<Location>;
   findById(id: number): Promise<Location | null>;
   findByName(name: string): Promise<Location | null>;
   findByCode(code: string): Promise<Location | null>;

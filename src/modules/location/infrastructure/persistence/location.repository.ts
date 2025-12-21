@@ -13,10 +13,7 @@ export class LocationRepository implements LocationRepositoryPort {
     private readonly db: NodePgDatabase<typeof schema>,
   ) {}
 
-  async create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {
-    // Ensure flag is always a string (path), not binary data or Buffer
-    const flagValue = typeof data.flag === 'string' ? data.flag : (data.flag ? String(data.flag) : '');
-    
+  async create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {   
     const [result] = await this.db
       .insert(schema.location)
       .values({
@@ -24,7 +21,7 @@ export class LocationRepository implements LocationRepositoryPort {
         code: data.code.toLowerCase(),
         lat: data.lat ?? "",
         lng: data.lng ?? "",
-        flag: flagValue,
+        flag: data.flag ?? "",
       })
       .returning();
 

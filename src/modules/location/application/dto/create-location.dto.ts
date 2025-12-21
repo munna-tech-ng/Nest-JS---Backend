@@ -3,6 +3,6 @@ export class CreateLocationDto {
   code: string;
   lat?: string;
   lng?: string;
-  flag?: string;
+  flag?: any;
 }
 
