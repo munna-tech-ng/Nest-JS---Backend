@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { LocationResponseDto } from "src/modules/location/presentation/http/http-dto/location.response.dto";
 
 export class ServerResponseDto {
   @ApiProperty({ example: 1 })
@@ -45,6 +46,9 @@ export class ServerResponseDto {
 
   @ApiProperty({ example: 1 })
   locationId: number;
+
+  @ApiProperty({ example: { id: 1, name: "Location 1", code: "LOC1", lat: 1.0, lng: 1.0, flag: "🇺🇸" } })
+  location?: LocationResponseDto;
 
   @ApiProperty({ example: "2024-01-01T00:00:00.000Z" })
   createdAt: Date;

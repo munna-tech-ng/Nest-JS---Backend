@@ -35,6 +35,7 @@ import { DeleteMultipleLocationRequestDto } from "./http-dto/delete-multiple.req
 import { UpdateFlagRequestDto } from "./http-dto/update-flag.request.dto";
 import { LocationMapper } from "./http-dto/location.mapper";
 import { InvalidMultipartRequestException } from "../../domain/exceptions/location.exceptions";
+import { ConfigService } from "@nestjs/config";
 
 @ApiTags("Locations")
 @Controller("locations")
@@ -52,6 +53,7 @@ export class LocationController {
     private readonly restoreMultipleLocationUseCase: RestoreMultipleLocationUseCase,
     private readonly deletePermanentLocationUseCase: DeletePermanentLocationUseCase,
     private readonly deletePermanentMultipleLocationUseCase: DeletePermanentMultipleLocationUseCase,
+    private readonly configService: ConfigService,
     @Inject(FILE_UPLOAD_SERVICE)
     private readonly fileUploadService: FileUploadServicePort,
   ) { }

@@ -195,6 +195,13 @@ export class ServerRepository implements ServerRepositoryPort {
       queryOptions.offset = (page - 1) * limit;
     }
 
+    // Include location
+    queryOptions.with = {
+      location: true,
+      categories: true,
+      tags: true,
+    };
+
     const [items, totalResult] = await Promise.all([
       this.db.query.server.findMany(queryOptions),
       this.db
