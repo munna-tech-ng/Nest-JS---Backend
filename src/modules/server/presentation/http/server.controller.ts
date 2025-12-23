@@ -111,17 +111,22 @@ export class ServerController {
   @ApiOperation({ summary: "Get a server by ID" })
   @ApiResponse({ status: 200, description: "Server retrieved successfully" })
   @ApiQuery({ name: "includeDeleted", required: false, type: Boolean })
+  // with location details
+  @ApiQuery({ name: "withLocation", required: false, type: Boolean, example: false })
   async getOne(
     @Param("id", ParseIntPipe) id: number,
     @Query("includeDeleted") includeDeleted?: string,
+    @Query("withLocation") withLocation?: string,
   ): Promise<BaseMaper> {
-    const server = await this.getServerUseCase.execute(id, includeDeleted === "true");
+    const withLocationValue = withLocation === "true" ? true : false;
+    const server = await this.getServerUseCase.execute(id, includeDeleted === "true", withLocationValue);
+    const filePath = this.configService.get<string>("APP_URL");
     return {
       title: "Server Retrieved",
       message: "Server has been retrieved successfully",
       error: false,
       statusCode: HttpStatus.OK,
-      data: ServerMapper.toDto(server),
+      data: ServerMapper.toDto(server, filePath),
     };
   }
 
@@ -156,15 +161,15 @@ export class ServerController {
       groupByLocation: isGrouped,
     });
 
-    const filePath = LocationMapper.getFileManagerUrl(this.configService.get("APP_URL"));
+    const filePath = this.configService.get<string>("APP_URL");
     
     // Handle both grouped and non-grouped responses
     const items = isGrouped
       ? (result.items as Array<{ location: Location; servers: Server[] }>).map((group) => ({
-          location: LocationMapper.toDto(group.location, filePath),
-          servers: ServerMapper.toDtoList(group.servers),
+          location: LocationMapper.toSimpleDto(group.location, filePath),
+          servers: ServerMapper.toSimpleDtoList(group.servers),
         }))
-      : ServerMapper.toDtoList(result.items as Server[]);
+      : ServerMapper.toSimpleDtoList(result.items as Server[]);
     
     return {
       title: "Servers Retrieved",

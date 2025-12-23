@@ -10,8 +10,8 @@ export class GetServerUseCase {
     private readonly serverRepository: ServerRepositoryPort,
   ) {}
 
-  async execute(id: number, includeDeleted?: boolean): Promise<Server> {
-    const server = await this.serverRepository.findById(id, includeDeleted);
+  async execute(id: number, includeDeleted?: boolean, withLocation?: boolean): Promise<Server> {
+    const server = await this.serverRepository.findById(id, includeDeleted, withLocation);
     if (!server) {
       throw new ServerNotFoundException(id);
     }

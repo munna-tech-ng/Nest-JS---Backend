@@ -6,6 +6,7 @@ import { Location } from "src/modules/location/domain/entities/location.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
 import { Database } from "src/infra/db/db.module";
 import * as schema from "src/infra/db/schema";
+import { ServerSchema } from "src/infra/db/schema/servers/server";
 
 @Injectable()
 export class ServerRepository implements ServerRepositoryPort {
@@ -135,18 +136,21 @@ export class ServerRepository implements ServerRepositoryPort {
     return Server.fromSchema(result);
   }
 
-  async findById(id: number, includeDeleted: boolean = false): Promise<Server | null> {
+  async findById(id: number, includeDeleted: boolean = false, withLocation: boolean = false): Promise<Server | null> {
     const conditions = includeDeleted
-      ? eq(schema.serverSchema.id, id)
-      : and(eq(schema.serverSchema.id, id), eq(schema.serverSchema.is_deleted, false));
+      ? (server: ServerSchema, { eq }) => eq(server.id, id)
+      : (server: ServerSchema, { eq, and }) => and(eq(server.id, id), eq(server.is_deleted, false));
+
+    const withClause = withLocation ? {
+      location: true,
+    } : undefined;
 
     // Use query API if available, otherwise fallback to regular query builder
     if (this.db.query?.serverSchema) {
       // Query API v2: where should use callback function, not SQL objects
       const result = await this.db.query.serverSchema.findFirst({
-        where: includeDeleted
-          ? (server, { eq }) => eq(server.id, id)
-          : (server, { eq, and }) => and(eq(server.id, id), eq(server.is_deleted, false)),
+        where: conditions,
+        with: withClause,
       });
       return result ? Server.fromSchema(result) : null;
     }
@@ -155,10 +159,25 @@ export class ServerRepository implements ServerRepositoryPort {
     const [result] = await this.db
       .select()
       .from(schema.serverSchema)
-      .where(conditions)
+      .where(conditions as any)
       .limit(1);
 
-    return result ? Server.fromSchema(result) : null;
+    if (!result) {
+      return null;
+    }
+
+    // If withLocation is true, fetch location separately
+    if (withLocation && result.location_id) {
+      const [location] = await this.db
+        .select()
+        .from(schema.location)
+        .where(eq(schema.location.id, result.location_id))
+        .limit(1);
+      
+      return Server.fromSchema({ ...result, location: location || undefined });
+    }
+
+    return Server.fromSchema(result);
   }
 
   async findAll(options: {

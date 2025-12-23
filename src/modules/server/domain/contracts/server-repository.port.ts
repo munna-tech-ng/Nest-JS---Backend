@@ -38,7 +38,7 @@ export interface ServerRepositoryPort {
     categoryIds?: number[];
     tagIds?: number[];
   }): Promise<Server>;
-  findById(id: number, includeDeleted?: boolean): Promise<Server | null>;
+  findById(id: number, includeDeleted?: boolean, withLocation?: boolean): Promise<Server | null>;
   findByIp(ip: string): Promise<Server | null>;
   findAll(options: { page?: number; limit?: number; includeDeleted?: boolean; isPaginate?: boolean; orderBy?: string; sortOrder?: "asc" | "desc"; groupByLocation?: boolean }): Promise<{ items: Server[] | Array<{ location: Location; servers: Server[] }>; total: number; page: number; limit: number }>;
   delete(id: number): Promise<void>;

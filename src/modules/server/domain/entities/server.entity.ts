@@ -1,4 +1,5 @@
 import { ServerSchema } from "src/infra/db/schema/servers/server";
+import { Location } from "src/modules/location/domain/entities/location.entity";
 
 export class Server {
   constructor(
@@ -20,9 +21,10 @@ export class Server {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public readonly description: string,
+    public readonly location?: Location,
   ) {}
 
-  static fromSchema(schema: ServerSchema): Server {
+  static fromSchema(schema: ServerSchema & { location?: any }): Server {
     return new Server(
       schema.id,
       schema.name,
@@ -42,6 +44,7 @@ export class Server {
       schema.createdAt,
       schema.updatedAt,
       schema.description ?? "",
+      schema.location ? Location.fromSchema(schema.location) : undefined,
     );
   }
 }

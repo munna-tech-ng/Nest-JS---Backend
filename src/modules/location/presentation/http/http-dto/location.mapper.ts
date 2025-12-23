@@ -23,5 +23,18 @@ export class LocationMapper {
   static getFileManagerUrl(path?: string): string {
     return path ?? process.env.APP_URL ?? "";
   }
+
+  /**
+   * Simplified DTO for location when used in nested responses (e.g., server.location)
+   * Returns only essential fields: id, name, code, and flag
+   */
+  static toSimpleDto(location: Location, path?: string): Pick<LocationResponseDto, 'id' | 'name' | 'code' | 'flag'> {
+    return {
+      id: location.id,
+      name: location.name,
+      code: location.code,
+      flag: path ? path + "/" + location.flag : location.flag,
+    };
+  }
 }
 

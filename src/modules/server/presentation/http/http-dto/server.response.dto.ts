@@ -47,8 +47,8 @@ export class ServerResponseDto {
   @ApiProperty({ example: 1 })
   locationId: number;
 
-  @ApiProperty({ example: { id: 1, name: "Location 1", code: "LOC1", lat: 1.0, lng: 1.0, flag: "🇺🇸" } })
-  location?: LocationResponseDto;
+  @ApiProperty({ example: { id: 1, name: "Location 1", code: "LOC1", flag: "🇺🇸" }, description: "Simplified location data (id, name, code, flag only)" })
+  location?: Pick<LocationResponseDto, 'id' | 'name' | 'code' | 'flag'>;
 
   @ApiProperty({ example: "2024-01-01T00:00:00.000Z" })
   createdAt: Date;
