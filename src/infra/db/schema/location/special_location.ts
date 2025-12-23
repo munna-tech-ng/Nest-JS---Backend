@@ -8,5 +8,9 @@ export const special_location = pgTable('special_locations', {
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => [
-    foreignKey({ columns: [table.location_id], foreignColumns: [location.id], name: 'fk_special_location_location' }),
+    foreignKey({ 
+        columns: [table.location_id], 
+        foreignColumns: [location.id], 
+        name: 'fk_special_location_location' 
+    }),
 ]);

@@ -1,0 +1,1 @@
+ALTER TABLE "servers" ADD CONSTRAINT "fk_server_location" FOREIGN KEY ("location_id") REFERENCES "locations"("id");

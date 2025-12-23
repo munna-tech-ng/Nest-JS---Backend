@@ -1,4 +1,4 @@
-import { Server as ServerSchema } from "src/infra/db/schema/servers/server";
+import { ServerSchema } from "src/infra/db/schema/servers/server";
 
 export class Server {
   constructor(

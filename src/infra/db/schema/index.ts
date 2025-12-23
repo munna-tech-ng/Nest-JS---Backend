@@ -5,7 +5,7 @@ import { server_tags } from './servers/server_tags';
 import { os } from './system/os';
 import { location } from './location/location';
 import { special_location } from './location/special_location';
-import { server } from './servers/server';
+import { serverSchema } from './servers/server';
 import { category } from './servers/category';
 import { tag } from './servers/tag';
 
@@ -17,7 +17,7 @@ export {
     category,
     location,
     special_location,
-    server,
+    serverSchema,
     server_category,
     server_tags,
 }

@@ -1,19 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { AuthServicePort } from "../../domain/contracts/auth-service-port";
 import { DRIZZLE } from "src/infra/db/db.config";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "src/infra/db/schema";
 import { eq } from "drizzle-orm";
 import { AuthProvider, AuthUser } from "../../domain/entities/auth-user.entity";
 import { AuthMethodType } from "../../domain/types/auth-method-type";
 import { Email } from "../../domain/value-objects/email.vo";
 import { Phone } from "../../domain/value-objects/phone.vo";
+import { Database } from "src/infra/db/db.module";
 
 @Injectable()
 export class AuthServiceRepository implements AuthServicePort {
     constructor(
         @Inject(DRIZZLE)
-        private readonly db: NodePgDatabase<typeof schema>,
+        private readonly db: Database,
     ) { }
 
     async getUserByPhone(phone: string): Promise<AuthUser> {

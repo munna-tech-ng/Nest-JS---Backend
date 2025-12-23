@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, inArray, sql, asc, desc } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { SpecialLocationRepositoryPort } from "../../domain/contracts/special-location-repository.port";
 import { SpecialLocation } from "../../domain/entities/special-location.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
 import * as schema from "src/infra/db/schema";
+import { Database } from "src/infra/db/db.module";
 
 @Injectable()
 export class SpecialLocationRepository implements SpecialLocationRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: NodePgDatabase<typeof schema>,
+    private readonly db: Database,
   ) {}
 
   async create(data: { locationId: number; type: string }): Promise<SpecialLocation> {
@@ -45,8 +45,9 @@ export class SpecialLocationRepository implements SpecialLocationRepositoryPort 
   }
 
   async findById(id: number): Promise<SpecialLocation | null> {
+    // Query API v2: where should use callback function, not SQL objects
     const result = await this.db.query.special_location.findFirst({
-      where: eq(schema.special_location.id, id),
+      where: (specialLocation, { eq }) => eq(specialLocation.id, id),
     });
 
     return result ? SpecialLocation.fromSchema(result) : null;
@@ -70,25 +71,29 @@ export class SpecialLocationRepository implements SpecialLocationRepositoryPort 
       ? eq(schema.special_location.location_id, options.locationId)
       : undefined;
 
-    const orderFn = sortOrder === "asc" ? asc : desc;
-    let orderByClause: any[];
+    // For query API v2: orderBy should be an object { field: "asc" | "desc" }
+    let orderByForQueryAPI: Record<string, "asc" | "desc">;
+    
     switch (orderBy) {
       case "type":
-        orderByClause = [orderFn(schema.special_location.type)];
+        orderByForQueryAPI = { type: sortOrder };
         break;
       case "createdAt":
-        orderByClause = [orderFn(schema.special_location.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
         break;
       case "updatedAt":
-        orderByClause = [orderFn(schema.special_location.updatedAt)];
+        orderByForQueryAPI = { updatedAt: sortOrder };
         break;
       default:
-        orderByClause = [orderFn(schema.special_location.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
     }
 
+    // Query API v2: where should use callback function, not SQL objects
     const queryOptions: any = {
-      where: conditions,
-      orderBy: orderByClause,
+      where: options.locationId
+        ? (specialLocation: any, { eq }: any) => eq(specialLocation.location_id, options.locationId)
+        : undefined,
+      orderBy: orderByForQueryAPI,
     };
 
     if (isPaginate) {

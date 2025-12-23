@@ -4,7 +4,17 @@ import { DRIZZLE } from './db.config';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import * as schema from './schema';
+import * as dbSchema from './schema';
+import { relations as dbRelations } from './schema/relations';
+
+// Helper to get the properly typed database instance
+// This captures the return type of drizzle() which includes the query API
+type DrizzleInstance = ReturnType<typeof drizzle<typeof dbSchema>>;
+
+// Export the database type with query API support
+export type Database = DrizzleInstance extends NodePgDatabase<infer T> 
+    ? NodePgDatabase<T> & { query: any }
+    : DrizzleInstance;
 
 @Global()
 @Module({
@@ -22,8 +32,13 @@ import * as schema from './schema';
                     connectionString: dbUrl,
                     max: 10
                 });
-                // Create drizzle entry with schema for relational query API
-                return drizzle({ client: pool, schema });
+                const db = drizzle({ 
+                    client: pool, 
+                    schema: dbSchema,
+                    relations: dbRelations 
+                });
+                
+                return db;
             },
             inject: [ConfigService],
         }

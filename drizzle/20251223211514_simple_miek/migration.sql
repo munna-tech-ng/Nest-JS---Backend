@@ -1,0 +1,1 @@
+ALTER TABLE "servers" DROP CONSTRAINT "fk_server_location";

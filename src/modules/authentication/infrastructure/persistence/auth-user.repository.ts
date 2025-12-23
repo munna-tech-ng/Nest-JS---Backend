@@ -1,6 +1,5 @@
 // modules/auth/infrastructure/persistence/auth-user.repository.ts
 import { Inject, Injectable } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { AuthUserRepositoryPort } from "../../domain/contracts/auth-user-repository.port";
 import { AuthProvider, AuthUser } from "../../domain/entities/auth-user.entity";
@@ -11,12 +10,13 @@ import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { Phone } from "../../domain/value-objects/phone.vo";
 import { SaveUserPayload } from "../../domain/types/auth-method-type";
+import { Database } from "src/infra/db/db.module";
 
 @Injectable()
 export class AuthUserRepository implements AuthUserRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: NodePgDatabase<typeof schema>,
+    private readonly db: Database,
   ) {}
 
   async findByEmail(email: Email): Promise<AuthUser | null> {
@@ -55,7 +55,7 @@ export class AuthUserRepository implements AuthUserRepositoryPort {
       where: eq(schema.user.phone, phone.value),
     });
     if (!row) return null;
-    return new AuthUser((row.id).toString(), Email.create(row.email), row.name, false, row.code, "phone", true, Phone.create(row.phone!));
+    return new AuthUser((row.id).toString(), Email.create(row.email), row.name, false, row.code, "phone", true, Phone.create(row.phone ?? ""));
   }
   
   async generatePasswordHash(password?: string): Promise<string> {

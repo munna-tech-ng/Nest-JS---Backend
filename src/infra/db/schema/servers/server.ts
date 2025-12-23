@@ -1,8 +1,7 @@
 import { integer, pgTable, serial, text, timestamp, boolean, foreignKey, index } from "drizzle-orm/pg-core";
 import { location } from "../location/location";
-import { defineRelations } from 'drizzle-orm';
 
-export const server = pgTable('servers', {
+export const serverSchema = pgTable('servers', {
     id: serial('id').primaryKey(),
     name: text('name').notNull().unique(),
     ip: text('ip').notNull().unique(),
@@ -31,15 +30,4 @@ export const server = pgTable('servers', {
     index('idx_server_location_id').on(table.location_id),
 ]);
 
-export const serverWithLocation = defineRelations(server, {
-    location: {
-        columns: {
-            id: true,
-            name: true,
-            code: true,
-            flag: true,
-        },
-    },
-});
-
-export type Server = typeof server.$inferSelect;
+export type ServerSchema = typeof serverSchema.$inferSelect;

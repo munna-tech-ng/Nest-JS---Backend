@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, inArray, sql, asc, desc } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { LocationRepositoryPort } from "../../domain/contracts/location-repository.port";
 import { Location } from "../../domain/entities/location.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
 import * as schema from "src/infra/db/schema";
+import { Database } from "src/infra/db/db.module";
 
 @Injectable()
 export class LocationRepository implements LocationRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: NodePgDatabase<typeof schema>,
+    private readonly db: Database,
   ) {}
 
   async create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {   
@@ -51,23 +51,26 @@ export class LocationRepository implements LocationRepositoryPort {
   }
 
   async findById(id: number): Promise<Location | null> {
+    // Query API v2: where should use callback function, not SQL objects
     const result = await this.db.query.location.findFirst({
-      where: eq(schema.location.id, id),
+      where: (location, { eq }) => eq(location.id, id),
     });
 
     return result ? Location.fromSchema(result) : null;
   }
 
   async findByName(name: string): Promise<Location | null> {
+    // Query API v2: where should use callback function, not SQL objects
     const result = await this.db.query.location.findFirst({
-      where: eq(schema.location.name, name),
+      where: (location, { eq }) => eq(location.name, name),
     });
     return result ? Location.fromSchema(result) : null;
   }
 
   async findByCode(code: string): Promise<Location | null> {
+    // Query API v2: where should use callback function, not SQL objects
     const result = await this.db.query.location.findFirst({
-      where: eq(schema.location.code, code.toLowerCase()),
+      where: (location, { eq }) => eq(location.code, code.toLowerCase()),
     });
     return result ? Location.fromSchema(result) : null;
   }
@@ -85,27 +88,28 @@ export class LocationRepository implements LocationRepositoryPort {
     const orderBy = options.orderBy ?? "createdAt";
     const sortOrder = options.sortOrder ?? "desc";
 
-    const orderFn = sortOrder === "asc" ? asc : desc;
-    let orderByClause: any[];
+    // For query API v2: orderBy should be an object { field: "asc" | "desc" }
+    let orderByForQueryAPI: Record<string, "asc" | "desc">;
+    
     switch (orderBy) {
       case "name":
-        orderByClause = [orderFn(schema.location.name)];
+        orderByForQueryAPI = { name: sortOrder };
         break;
       case "code":
-        orderByClause = [orderFn(schema.location.code)];
+        orderByForQueryAPI = { code: sortOrder };
         break;
       case "createdAt":
-        orderByClause = [orderFn(schema.location.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
         break;
       case "updatedAt":
-        orderByClause = [orderFn(schema.location.updatedAt)];
+        orderByForQueryAPI = { updatedAt: sortOrder };
         break;
       default:
-        orderByClause = [orderFn(schema.location.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
     }
 
     const queryOptions: any = {
-      orderBy: orderByClause,
+      orderBy: orderByForQueryAPI,
     };
 
     if (isPaginate) {

@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, and, inArray, sql, asc, desc } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { CategoryRepositoryPort } from "../../domain/contracts/category-repository.port";
 import { Category } from "../../domain/entities/category.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
 import * as schema from "src/infra/db/schema";
+import { Database } from "src/infra/db/db.module";
 
 @Injectable()
 export class CategoryRepository implements CategoryRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: NodePgDatabase<typeof schema>,
+    private readonly db: Database,
   ) {}
 
   async create(data: { name: string; description?: string }): Promise<Category> {
@@ -45,12 +45,11 @@ export class CategoryRepository implements CategoryRepositoryPort {
   }
 
   async findById(id: number, includeDeleted: boolean = false): Promise<Category | null> {
-    const conditions = includeDeleted
-      ? eq(schema.category.id, id)
-      : and(eq(schema.category.id, id), eq(schema.category.is_deleted, false));
-
+    // Query API v2: where should use callback function, not SQL objects
     const result = await this.db.query.category.findFirst({
-      where: conditions,
+      where: includeDeleted
+        ? (category, { eq }) => eq(category.id, id)
+        : (category, { eq, and }) => and(eq(category.id, id), eq(category.is_deleted, false)),
     });
 
     return result ? Category.fromSchema(result) : null;
@@ -71,28 +70,30 @@ export class CategoryRepository implements CategoryRepositoryPort {
     const orderBy = options.orderBy ?? "createdAt";
     const sortOrder = options.sortOrder ?? "desc";
 
+    // For query API v2: orderBy should be an object { field: "asc" | "desc" }
+    let orderByForQueryAPI: Record<string, "asc" | "desc">;
     const conditions = includeDeleted ? undefined : eq(schema.category.is_deleted, false);
-
-    // Build orderBy clause dynamically
-    const orderFn = sortOrder === "asc" ? asc : desc;
-    let orderByClause: any[];
+    
     switch (orderBy) {
       case "name":
-        orderByClause = [orderFn(schema.category.name)];
+        orderByForQueryAPI = { name: sortOrder };
         break;
       case "createdAt":
-        orderByClause = [orderFn(schema.category.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
         break;
       case "updatedAt":
-        orderByClause = [orderFn(schema.category.updatedAt)];
+        orderByForQueryAPI = { updatedAt: sortOrder };
         break;
       default:
-        orderByClause = [orderFn(schema.category.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
     }
 
+    // Query API v2: where should use callback function, not SQL objects
     const queryOptions: any = {
-      where: conditions,
-      orderBy: orderByClause,
+      where: includeDeleted
+        ? undefined
+        : (category: any, { eq }: any) => eq(category.is_deleted, false),
+      orderBy: orderByForQueryAPI,
     };
 
     if (isPaginate) {

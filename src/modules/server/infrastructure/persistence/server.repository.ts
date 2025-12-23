@@ -1,17 +1,17 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, and, inArray, sql, asc, desc } from "drizzle-orm";
 import { ServerRepositoryPort } from "../../domain/contracts/server-repository.port";
 import { Server } from "../../domain/entities/server.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
+import { Database } from "src/infra/db/db.module";
 import * as schema from "src/infra/db/schema";
 
 @Injectable()
 export class ServerRepository implements ServerRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: NodePgDatabase<typeof schema>,
-  ) {}
+    private readonly db: Database,
+  ) { }
 
   async create(data: {
     name: string;
@@ -32,7 +32,7 @@ export class ServerRepository implements ServerRepositoryPort {
     tagIds?: number[];
   }): Promise<Server> {
     const [result] = await this.db
-      .insert(schema.server)
+      .insert(schema.serverSchema)
       .values({
         name: data.name,
         ip: data.ip,
@@ -102,9 +102,9 @@ export class ServerRepository implements ServerRepositoryPort {
     updateData.updatedAt = new Date();
 
     const [result] = await this.db
-      .update(schema.server)
+      .update(schema.serverSchema)
       .set(updateData)
-      .where(eq(schema.server.id, id))
+      .where(eq(schema.serverSchema.id, id))
       .returning();
 
     if (!result) {
@@ -136,12 +136,26 @@ export class ServerRepository implements ServerRepositoryPort {
 
   async findById(id: number, includeDeleted: boolean = false): Promise<Server | null> {
     const conditions = includeDeleted
-      ? eq(schema.server.id, id)
-      : and(eq(schema.server.id, id), eq(schema.server.is_deleted, false));
+      ? eq(schema.serverSchema.id, id)
+      : and(eq(schema.serverSchema.id, id), eq(schema.serverSchema.is_deleted, false));
 
-    const result = await this.db.query.server.findFirst({
-      where: conditions,
-    });
+    // Use query API if available, otherwise fallback to regular query builder
+    if (this.db.query?.serverSchema) {
+      // Query API v2: where should use callback function, not SQL objects
+      const result = await this.db.query.serverSchema.findFirst({
+        where: includeDeleted
+          ? (server, { eq }) => eq(server.id, id)
+          : (server, { eq, and }) => and(eq(server.id, id), eq(server.is_deleted, false)),
+      });
+      return result ? Server.fromSchema(result) : null;
+    }
+
+    // Fallback to regular query builder
+    const [result] = await this.db
+      .select()
+      .from(schema.serverSchema)
+      .where(conditions)
+      .limit(1);
 
     return result ? Server.fromSchema(result) : null;
   }
@@ -161,33 +175,45 @@ export class ServerRepository implements ServerRepositoryPort {
     const orderBy = options.orderBy ?? "createdAt";
     const sortOrder = options.sortOrder ?? "desc";
 
-    const conditions = includeDeleted ? undefined : eq(schema.server.is_deleted, false);
+    const conditions = includeDeleted ? undefined : eq(schema.serverSchema.is_deleted, false);
 
-    const orderFn = sortOrder === "asc" ? asc : desc;
+    // For query API v2: orderBy should be an object { field: "asc" | "desc" }
+    // For regular query builder: orderBy should be an array of SQL functions
+    let orderByForQueryAPI: Record<string, "asc" | "desc">;
     let orderByClause: any[];
+    
     switch (orderBy) {
       case "name":
-        orderByClause = [orderFn(schema.server.name)];
+        orderByForQueryAPI = { name: sortOrder };
+        orderByClause = [sortOrder === "asc" ? asc(schema.serverSchema.name) : desc(schema.serverSchema.name)];
         break;
       case "ip":
-        orderByClause = [orderFn(schema.server.ip)];
+        orderByForQueryAPI = { ip: sortOrder };
+        orderByClause = [sortOrder === "asc" ? asc(schema.serverSchema.ip) : desc(schema.serverSchema.ip)];
         break;
       case "status":
-        orderByClause = [orderFn(schema.server.status)];
+        orderByForQueryAPI = { status: sortOrder };
+        orderByClause = [sortOrder === "asc" ? asc(schema.serverSchema.status) : desc(schema.serverSchema.status)];
         break;
       case "createdAt":
-        orderByClause = [orderFn(schema.server.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
+        orderByClause = [sortOrder === "asc" ? asc(schema.serverSchema.createdAt) : desc(schema.serverSchema.createdAt)];
         break;
       case "updatedAt":
-        orderByClause = [orderFn(schema.server.updatedAt)];
+        orderByForQueryAPI = { updatedAt: sortOrder };
+        orderByClause = [sortOrder === "asc" ? asc(schema.serverSchema.updatedAt) : desc(schema.serverSchema.updatedAt)];
         break;
       default:
-        orderByClause = [orderFn(schema.server.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
+        orderByClause = [sortOrder === "asc" ? asc(schema.serverSchema.createdAt) : desc(schema.serverSchema.createdAt)];
     }
 
+    // Query API v2: where should use callback function, not SQL objects
     const queryOptions: any = {
-      where: conditions,
-      orderBy: orderByClause,
+      where: includeDeleted
+        ? undefined
+        : (server: any, { eq }: any) => eq(server.is_deleted, false),
+      orderBy: orderByForQueryAPI,
     };
 
     if (isPaginate) {
@@ -195,20 +221,38 @@ export class ServerRepository implements ServerRepositoryPort {
       queryOptions.offset = (page - 1) * limit;
     }
 
-    // Include location
-    queryOptions.with = {
-      location: true,
-      categories: true,
-      tags: true,
-    };
+    // Use query API if available, otherwise fallback to regular query builder
+    let items: any[];
+    let totalResult: any[];
 
-    const [items, totalResult] = await Promise.all([
-      this.db.query.server.findMany(queryOptions),
-      this.db
-        .select({ count: sql<number>`count(*)` })
-        .from(schema.server)
-        .where(conditions ?? sql`1=1`),
-    ]);
+    if (this.db.query?.serverSchema) {
+      [items, totalResult] = await Promise.all([
+        this.db.query.serverSchema.findMany(queryOptions),
+        this.db
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.serverSchema)
+          .where(conditions ?? sql`1=1`),
+      ]);
+    } else {
+      // Fallback to regular query builder
+      const baseQuery = this.db
+        .select()
+        .from(schema.serverSchema)
+        .where(conditions ?? sql`1=1`)
+        .orderBy(...orderByClause);
+      
+      const itemsQuery = isPaginate 
+        ? baseQuery.limit(limit).offset((page - 1) * limit)
+        : baseQuery;
+      
+      [items, totalResult] = await Promise.all([
+        itemsQuery,
+        this.db
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.serverSchema)
+          .where(conditions ?? sql`1=1`),
+      ]);
+    }
 
     return {
       items: items.map((item) => Server.fromSchema(item)),
@@ -220,32 +264,32 @@ export class ServerRepository implements ServerRepositoryPort {
 
   async delete(id: number): Promise<void> {
     await this.db
-      .update(schema.server)
+      .update(schema.serverSchema)
       .set({ is_deleted: true, updatedAt: new Date() })
-      .where(eq(schema.server.id, id));
+      .where(eq(schema.serverSchema.id, id));
   }
 
   async deleteMultiple(ids: number[]): Promise<void> {
     if (ids.length === 0) return;
     await this.db
-      .update(schema.server)
+      .update(schema.serverSchema)
       .set({ is_deleted: true, updatedAt: new Date() })
-      .where(inArray(schema.server.id, ids));
+      .where(inArray(schema.serverSchema.id, ids));
   }
 
   async restore(id: number): Promise<void> {
     await this.db
-      .update(schema.server)
+      .update(schema.serverSchema)
       .set({ is_deleted: false, updatedAt: new Date() })
-      .where(eq(schema.server.id, id));
+      .where(eq(schema.serverSchema.id, id));
   }
 
   async restoreMultiple(ids: number[]): Promise<void> {
     if (ids.length === 0) return;
     await this.db
-      .update(schema.server)
+      .update(schema.serverSchema)
       .set({ is_deleted: false, updatedAt: new Date() })
-      .where(inArray(schema.server.id, ids));
+      .where(inArray(schema.serverSchema.id, ids));
   }
 
   async deletePermanent(id: number): Promise<void> {
@@ -253,7 +297,7 @@ export class ServerRepository implements ServerRepositoryPort {
     await this.db.delete(schema.server_category).where(eq(schema.server_category.server_id, id));
     await this.db.delete(schema.server_tags).where(eq(schema.server_tags.server_id, id));
     // Delete server
-    await this.db.delete(schema.server).where(eq(schema.server.id, id));
+    await this.db.delete(schema.serverSchema).where(eq(schema.serverSchema.id, id));
   }
 
   async deletePermanentMultiple(ids: number[]): Promise<void> {
@@ -262,7 +306,7 @@ export class ServerRepository implements ServerRepositoryPort {
     await this.db.delete(schema.server_category).where(inArray(schema.server_category.server_id, ids));
     await this.db.delete(schema.server_tags).where(inArray(schema.server_tags.server_id, ids));
     // Delete servers
-    await this.db.delete(schema.server).where(inArray(schema.server.id, ids));
+    await this.db.delete(schema.serverSchema).where(inArray(schema.serverSchema.id, ids));
   }
 
   async addCategories(serverId: number, categoryIds: number[]): Promise<void> {

@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, and, inArray, sql, asc, desc } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { TagRepositoryPort } from "../../domain/contracts/tag-repository.port";
 import { Tag } from "../../domain/entities/tag.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
 import * as schema from "src/infra/db/schema";
+import { Database } from "src/infra/db/db.module";
 
 @Injectable()
 export class TagRepository implements TagRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: NodePgDatabase<typeof schema>,
+    private readonly db: Database,
   ) {}
 
   async create(data: { name: string; description?: string }): Promise<Tag> {
@@ -45,12 +45,11 @@ export class TagRepository implements TagRepositoryPort {
   }
 
   async findById(id: number, includeDeleted: boolean = false): Promise<Tag | null> {
-    const conditions = includeDeleted
-      ? eq(schema.tag.id, id)
-      : and(eq(schema.tag.id, id), eq(schema.tag.is_deleted, false));
-
+    // Query API v2: where should use callback function, not SQL objects
     const result = await this.db.query.tag.findFirst({
-      where: conditions,
+      where: includeDeleted
+        ? (tag, { eq }) => eq(tag.id, id)
+        : (tag, { eq, and }) => and(eq(tag.id, id), eq(tag.is_deleted, false)),
     });
 
     return result ? Tag.fromSchema(result) : null;
@@ -71,27 +70,30 @@ export class TagRepository implements TagRepositoryPort {
     const orderBy = options.orderBy ?? "createdAt";
     const sortOrder = options.sortOrder ?? "desc";
 
+    // For query API v2: orderBy should be an object { field: "asc" | "desc" }
+    let orderByForQueryAPI: Record<string, "asc" | "desc">;
     const conditions = includeDeleted ? undefined : eq(schema.tag.is_deleted, false);
-
-    const orderFn = sortOrder === "asc" ? asc : desc;
-    let orderByClause: any[];
+    
     switch (orderBy) {
       case "name":
-        orderByClause = [orderFn(schema.tag.name)];
+        orderByForQueryAPI = { name: sortOrder };
         break;
       case "createdAt":
-        orderByClause = [orderFn(schema.tag.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
         break;
       case "updatedAt":
-        orderByClause = [orderFn(schema.tag.updatedAt)];
+        orderByForQueryAPI = { updatedAt: sortOrder };
         break;
       default:
-        orderByClause = [orderFn(schema.tag.createdAt)];
+        orderByForQueryAPI = { createdAt: sortOrder };
     }
 
+    // Query API v2: where should use callback function, not SQL objects
     const queryOptions: any = {
-      where: conditions,
-      orderBy: orderByClause,
+      where: includeDeleted
+        ? undefined
+        : (tag: any, { eq }: any) => eq(tag.is_deleted, false),
+      orderBy: orderByForQueryAPI,
     };
 
     if (isPaginate) {
