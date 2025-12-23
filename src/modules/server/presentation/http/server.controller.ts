@@ -26,6 +26,10 @@ import { CreateServerRequestDto } from "./http-dto/create-server.request.dto";
 import { UpdateServerRequestDto } from "./http-dto/update-server.request.dto";
 import { DeleteMultipleServerRequestDto } from "./http-dto/delete-multiple.request.dto";
 import { ServerMapper } from "./http-dto/server.mapper";
+import { LocationMapper } from "src/modules/location/presentation/http/http-dto/location.mapper";
+import { Location } from "src/modules/location/domain/entities/location.entity";
+import { Server } from "../../domain/entities/server.entity";
+import { ConfigService } from "@nestjs/config";
 
 @ApiTags("Servers")
 @Controller("servers")
@@ -41,6 +45,7 @@ export class ServerController {
     private readonly restoreMultipleServerUseCase: RestoreMultipleServerUseCase,
     private readonly deletePermanentServerUseCase: DeletePermanentServerUseCase,
     private readonly deletePermanentMultipleServerUseCase: DeletePermanentMultipleServerUseCase,
+    private readonly configService: ConfigService,
   ) {}
 
   @Post()
@@ -129,6 +134,8 @@ export class ServerController {
   @ApiQuery({ name: "isPaginate", required: false, type: Boolean, example: true })
   @ApiQuery({ name: "orderBy", required: false, type: String, example: "createdAt", enum: ["name", "ip", "status", "createdAt", "updatedAt"] })
   @ApiQuery({ name: "sortOrder", required: false, type: String, example: "desc", enum: ["asc", "desc"] })
+  // is group by location
+  @ApiQuery({ name: "groupByLocation", required: false, type: Boolean, example: false })
   async getAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
@@ -136,7 +143,9 @@ export class ServerController {
     @Query("isPaginate") isPaginate?: string,
     @Query("orderBy") orderBy?: string,
     @Query("sortOrder") sortOrder?: string,
+    @Query("groupByLocation") groupByLocation?: string,
   ): Promise<BaseMaper> {
+    const isGrouped = groupByLocation === "true";
     const result = await this.getServersUseCase.execute({
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
@@ -144,14 +153,26 @@ export class ServerController {
       isPaginate: isPaginate !== "false",
       orderBy: orderBy,
       sortOrder: sortOrder === "asc" ? "asc" : "desc",
+      groupByLocation: isGrouped,
     });
+
+    const filePath = LocationMapper.getFileManagerUrl(this.configService.get("APP_URL"));
+    
+    // Handle both grouped and non-grouped responses
+    const items = isGrouped
+      ? (result.items as Array<{ location: Location; servers: Server[] }>).map((group) => ({
+          location: LocationMapper.toDto(group.location, filePath),
+          servers: ServerMapper.toDtoList(group.servers),
+        }))
+      : ServerMapper.toDtoList(result.items as Server[]);
+    
     return {
       title: "Servers Retrieved",
       message: "Servers have been retrieved successfully",
       error: false,
       statusCode: HttpStatus.OK,
       data: {
-        items: ServerMapper.toDtoList(result.items),
+        items,
         total: result.total,
         page: result.page,
         limit: result.limit,

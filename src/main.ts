@@ -30,7 +30,7 @@ async function bootstrap() {
     // Use public as asset directory
     await app.register(fastifyStatic, {
         root: join(process.cwd(), "public"),
-        prefix: "/public/",
+        prefix: "/",
     });
 
     // Apply global exception filter

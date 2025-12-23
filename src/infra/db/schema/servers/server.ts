@@ -3,7 +3,7 @@ import { location } from "../location/location";
 
 export const serverSchema = pgTable('servers', {
     id: serial('id').primaryKey(),
-    name: text('name').notNull().unique(),
+    name: text('name').notNull(),
     ip: text('ip').notNull().unique(),
     port: integer('port').default(3500),
     status: text('status').default('offline'),

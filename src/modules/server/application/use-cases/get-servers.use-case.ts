@@ -17,6 +17,7 @@ export class GetServersUseCase {
       isPaginate: input.isPaginate,
       orderBy: input.orderBy,
       sortOrder: input.sortOrder,
+      groupByLocation: input.groupByLocation,
     });
   }
 }

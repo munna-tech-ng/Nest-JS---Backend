@@ -20,7 +20,7 @@ export class LocationMapper {
     return locations.map((location) => this.toDto(location, fileManagerUrl));
   }
 
-  private static getFileManagerUrl(path?: string): string {
+  static getFileManagerUrl(path?: string): string {
     return path ?? process.env.APP_URL ?? "";
   }
 }

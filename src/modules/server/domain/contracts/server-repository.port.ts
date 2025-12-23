@@ -1,4 +1,5 @@
 import { Server } from "../entities/server.entity";
+import { Location } from "src/modules/location/domain/entities/location.entity";
 
 export interface ServerRepositoryPort {
   create(data: {
@@ -38,7 +39,8 @@ export interface ServerRepositoryPort {
     tagIds?: number[];
   }): Promise<Server>;
   findById(id: number, includeDeleted?: boolean): Promise<Server | null>;
-  findAll(options: { page?: number; limit?: number; includeDeleted?: boolean; isPaginate?: boolean; orderBy?: string; sortOrder?: "asc" | "desc" }): Promise<{ items: Server[]; total: number; page: number; limit: number }>;
+  findByIp(ip: string): Promise<Server | null>;
+  findAll(options: { page?: number; limit?: number; includeDeleted?: boolean; isPaginate?: boolean; orderBy?: string; sortOrder?: "asc" | "desc"; groupByLocation?: boolean }): Promise<{ items: Server[] | Array<{ location: Location; servers: Server[] }>; total: number; page: number; limit: number }>;
   delete(id: number): Promise<void>;
   deleteMultiple(ids: number[]): Promise<void>;
   restore(id: number): Promise<void>;

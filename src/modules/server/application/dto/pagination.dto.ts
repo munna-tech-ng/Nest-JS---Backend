@@ -5,5 +5,6 @@ export class PaginationDto {
   isPaginate?: boolean = true;
   orderBy?: string = "createdAt";
   sortOrder?: "asc" | "desc" = "desc";
+  groupByLocation?: boolean = false;
 }
 

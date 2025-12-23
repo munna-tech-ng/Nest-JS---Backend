@@ -12,18 +12,8 @@ export class CreateServerUseCase {
   ) {}
 
   async execute(input: CreateServerDto): Promise<Server> {
-    const existing = await this.serverRepository.findAll({ 
-      page: 1, 
-      limit: 1000, 
-      includeDeleted: true 
-    });
-    const nameExists = existing.items.some(srv => srv.name.toLowerCase() === input.name.toLowerCase());
-    const ipExists = existing.items.some(srv => srv.ip === input.ip);
-    
-    if (nameExists) {
-      throw new ServerAlreadyExistsException("name", input.name);
-    }
-    if (ipExists) {
+    const existing = await this.serverRepository.findByIp(input.ip);
+    if (existing) {
       throw new ServerAlreadyExistsException("ip", input.ip);
     }
 

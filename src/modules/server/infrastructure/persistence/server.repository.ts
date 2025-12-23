@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { eq, and, inArray, sql, asc, desc } from "drizzle-orm";
 import { ServerRepositoryPort } from "../../domain/contracts/server-repository.port";
 import { Server } from "../../domain/entities/server.entity";
+import { Location } from "src/modules/location/domain/entities/location.entity";
 import { DRIZZLE } from "src/infra/db/db.config";
 import { Database } from "src/infra/db/db.module";
 import * as schema from "src/infra/db/schema";
@@ -167,15 +168,28 @@ export class ServerRepository implements ServerRepositoryPort {
     isPaginate?: boolean;
     orderBy?: string;
     sortOrder?: "asc" | "desc";
-  }): Promise<{ items: Server[]; total: number; page: number; limit: number }> {
+    groupByLocation?: boolean;
+  }): Promise<{ items: Server[] | Array<{ location: Location; servers: Server[] }>; total: number; page: number; limit: number }> {
     const page = options.page ?? 1;
     const limit = options.limit ?? 20;
     const isPaginate = options.isPaginate ?? true;
     const includeDeleted = options.includeDeleted ?? false;
     const orderBy = options.orderBy ?? "createdAt";
     const sortOrder = options.sortOrder ?? "desc";
-
+    const groupByLocation = options.groupByLocation ?? false;
     const conditions = includeDeleted ? undefined : eq(schema.serverSchema.is_deleted, false);
+
+    // If grouping by location, use a different approach
+    if (groupByLocation) {
+      return this.findAllGroupedByLocation({
+        page,
+        limit,
+        isPaginate,
+        includeDeleted,
+        orderBy,
+        sortOrder,
+      });
+    }
 
     // For query API v2: orderBy should be an object { field: "asc" | "desc" }
     // For regular query builder: orderBy should be an array of SQL functions
@@ -259,6 +273,160 @@ export class ServerRepository implements ServerRepositoryPort {
       total: Number(totalResult[0]?.count ?? 0),
       page: isPaginate ? page : 1,
       limit: isPaginate ? limit : items.length,
+    };
+  }
+
+  async findByIp(ip: string): Promise<Server | null> {
+    const [result] = await this.db.select().from(schema.serverSchema).where(eq(schema.serverSchema.ip, ip)).limit(1);
+    return result ? Server.fromSchema(result) : null;
+  }
+
+  private async findAllGroupedByLocation(options: {
+    page: number;
+    limit: number;
+    isPaginate: boolean;
+    includeDeleted: boolean;
+    orderBy: string;
+    sortOrder: "asc" | "desc";
+  }): Promise<{ items: Array<{ location: Location; servers: Server[] }>; total: number; page: number; limit: number }> {
+    const { page, limit, isPaginate, includeDeleted, orderBy, sortOrder } = options;
+    const conditions = includeDeleted ? undefined : eq(schema.serverSchema.is_deleted, false);
+
+    // Build orderBy clause for servers
+    const orderFn = sortOrder === "asc" ? asc : desc;
+    let serverOrderByClause: any[];
+    switch (orderBy) {
+      case "name":
+        serverOrderByClause = [orderFn(schema.serverSchema.name)];
+        break;
+      case "ip":
+        serverOrderByClause = [orderFn(schema.serverSchema.ip)];
+        break;
+      case "status":
+        serverOrderByClause = [orderFn(schema.serverSchema.status)];
+        break;
+      case "createdAt":
+        serverOrderByClause = [orderFn(schema.serverSchema.createdAt)];
+        break;
+      case "updatedAt":
+        serverOrderByClause = [orderFn(schema.serverSchema.updatedAt)];
+        break;
+      default:
+        serverOrderByClause = [orderFn(schema.serverSchema.createdAt)];
+    }
+
+    // Fetch all servers with their location relation
+    let serversWithLocation: any[];
+    if (this.db.query?.serverSchema) {
+      serversWithLocation = await this.db.query.serverSchema.findMany({
+        where: includeDeleted
+          ? undefined
+          : (server: any, { eq }: any) => eq(server.is_deleted, false),
+        with: {
+          location: true,
+        },
+        orderBy: { [orderBy]: sortOrder },
+      });
+    } else {
+      // Fallback: fetch servers and locations separately
+      const servers = await this.db
+        .select()
+        .from(schema.serverSchema)
+        .where(conditions ?? sql`1=1`)
+        .orderBy(...serverOrderByClause);
+
+      // Get unique location IDs (filter out null/undefined and 0)
+      const locationIds = [...new Set(servers.map(s => s.location_id).filter((id): id is number => id !== null && id !== undefined && id > 0))];
+      
+      // Fetch locations
+      const locations = locationIds.length > 0
+        ? await this.db
+            .select()
+            .from(schema.location)
+            .where(inArray(schema.location.id, locationIds))
+        : [];
+
+      // Map locations by ID
+      const locationMap = new Map(locations.map(loc => [loc.id, loc]));
+
+      // Combine servers with locations
+      serversWithLocation = servers.map(server => ({
+        ...server,
+        location: server.location_id ? locationMap.get(server.location_id) || null : null,
+      }));
+    }
+
+    // Group servers by location
+    const locationMap = new Map<number, { location: any; servers: any[] }>();
+
+    for (const server of serversWithLocation) {
+      const locationId = server.location_id;
+      if (!locationId || locationId === 0 || !server.location) {
+        continue; // Skip servers without location
+      }
+
+      if (!locationMap.has(locationId)) {
+        locationMap.set(locationId, {
+          location: Location.fromSchema(server.location),
+          servers: [],
+        });
+      }
+
+      locationMap.get(locationId)!.servers.push(Server.fromSchema(server));
+    }
+
+    // Convert map to array and sort servers within each location
+    const groupedItems = Array.from(locationMap.values()).map(group => ({
+      location: group.location,
+      servers: group.servers.sort((a, b) => {
+        // Sort servers within location based on orderBy
+        switch (orderBy) {
+          case "name":
+            return sortOrder === "asc"
+              ? a.name.localeCompare(b.name)
+              : b.name.localeCompare(a.name);
+          case "ip":
+            return sortOrder === "asc"
+              ? a.ip.localeCompare(b.ip)
+              : b.ip.localeCompare(a.ip);
+          case "status":
+            return sortOrder === "asc"
+              ? a.status.localeCompare(b.status)
+              : b.status.localeCompare(a.status);
+          case "createdAt":
+            return sortOrder === "asc"
+              ? a.createdAt.getTime() - b.createdAt.getTime()
+              : b.createdAt.getTime() - a.createdAt.getTime();
+          case "updatedAt":
+            return sortOrder === "asc"
+              ? a.updatedAt.getTime() - b.updatedAt.getTime()
+              : b.updatedAt.getTime() - a.updatedAt.getTime();
+          default:
+            return sortOrder === "asc"
+              ? a.createdAt.getTime() - b.createdAt.getTime()
+              : b.createdAt.getTime() - a.createdAt.getTime();
+        }
+      }),
+    }));
+
+    // Sort locations by name (you can change this to sort by other fields)
+    groupedItems.sort((a, b) => a.location.name.localeCompare(b.location.name));
+
+    // Apply pagination on grouped locations
+    const total = groupedItems.length;
+    let paginatedItems = groupedItems;
+
+    if (isPaginate) {
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      paginatedItems = groupedItems.slice(startIndex, endIndex);
+    }
+
+    return {
+      items: paginatedItems,
+      total,
+      page: isPaginate ? page : 1,
+      limit: isPaginate ? limit : paginatedItems.length,
     };
   }
 

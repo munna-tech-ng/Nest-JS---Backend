@@ -1,0 +1,1 @@
+ALTER TABLE "servers" DROP CONSTRAINT "servers_name_key";
