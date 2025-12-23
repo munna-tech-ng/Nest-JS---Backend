@@ -11,9 +11,9 @@ export class LocationRepository implements LocationRepositoryPort {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: Database,
-  ) {}
+  ) { }
 
-  async create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {   
+  async create(data: { name: string; code: string; lat?: string; lng?: string; flag?: string }): Promise<Location> {
     const [result] = await this.db
       .insert(schema.location)
       .values({
@@ -61,17 +61,21 @@ export class LocationRepository implements LocationRepositoryPort {
 
   async findByName(name: string): Promise<Location | null> {
     // Query API v2: where should use callback function, not SQL objects
-    const result = await this.db.query.location.findFirst({
-      where: (location, { eq }) => eq(location.name, name),
-    });
+    const [result] = await this.db.select().from(schema.location)
+      .where(eq(schema.location.name, name))
+      .limit(1);
     return result ? Location.fromSchema(result) : null;
   }
 
   async findByCode(code: string): Promise<Location | null> {
-    // Query API v2: where should use callback function, not SQL objects
-    const result = await this.db.query.location.findFirst({
-      where: (location, { eq }) => eq(location.code, code.toLowerCase()),
-    });
+    // Use regular query builder for case-insensitive comparison
+    // Query API v2 doesn't support calling methods on column references
+    const [result] = await this.db
+      .select()
+      .from(schema.location)
+      .where(eq(schema.location.code, code.toLowerCase()))
+      .limit(1);
+
     return result ? Location.fromSchema(result) : null;
   }
 
@@ -90,7 +94,7 @@ export class LocationRepository implements LocationRepositoryPort {
 
     // For query API v2: orderBy should be an object { field: "asc" | "desc" }
     let orderByForQueryAPI: Record<string, "asc" | "desc">;
-    
+
     switch (orderBy) {
       case "name":
         orderByForQueryAPI = { name: sortOrder };

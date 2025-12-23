@@ -17,6 +17,7 @@ export class CreateLocationUseCase {
   async execute(input: CreateLocationDto): Promise<Location> {
     // Validate required fields
     const existing = await this.locationRepository.findByCode(input.code.toLowerCase());
+    console.log(existing);
     if (existing) {
       throw new LocationAlreadyExistsException("code", input.code);
     }
