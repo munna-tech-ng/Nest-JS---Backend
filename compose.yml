@@ -1,0 +1,17 @@
+services:
+  app:
+    image: ${IMAGE:-ghcr.io/munna-tech-ng/nest-js---backend:latest}
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3001}:3001"
+    env_file:
+      - .env
+    labels:
+      hub.project: "${HUB_PROJECT_SLUG:-}"
+      hub.stack: "nestjs"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3001/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    mem_limit: 512m
+    cpus: 1.0
