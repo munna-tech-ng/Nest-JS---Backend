@@ -16,5 +16,7 @@ ENV NODE_ENV=production
 COPY --from=build /app/package.json /app/package-lock.json* ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+# SQL journal for runtime migrator (node dist/infra/db/migrate.js)
+COPY --from=build /app/drizzle ./drizzle
 EXPOSE 3000
 CMD ["node", "dist/main"]

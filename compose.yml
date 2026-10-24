@@ -1,15 +1,27 @@
 services:
-  app:
-    image: ${IMAGE:-ghcr.io/munna-tech-ng/nest-js---backend:latest}
-    ports:
-      - "127.0.0.1:${HOST_PORT:-3001}:3001"
+  migrate:
+    image: ${IMAGE:-ghcr.io/munna-tech-ng/nest-js-backend:latest}
     env_file:
       - .env
+    command: ["node", "dist/infra/db/migrate.js"]
+    restart: "no"
+    # One-shot: docker compose run --rm migrate
+    # Or: docker compose up migrate && docker compose up -d app
+
+  app:
+    image: ${IMAGE:-ghcr.io/munna-tech-ng/nest-js-backend:latest}
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3001}:3000"
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     labels:
       hub.project: "${HUB_PROJECT_SLUG:-}"
       hub.stack: "nestjs"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3001/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/"]
       interval: 10s
       timeout: 3s
       retries: 3
