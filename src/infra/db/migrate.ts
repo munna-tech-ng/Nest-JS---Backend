@@ -6,7 +6,8 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
-import path from 'node:path';
+// import path from 'node:path';
+import { resolve } from 'node:path';
 
 async function main() {
   const url = process.env.DATABASE_URL;
