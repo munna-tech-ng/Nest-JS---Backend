@@ -6,7 +6,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
-// import path from 'node:path';
 import { resolve } from 'node:path';
 
 async function main() {
@@ -17,8 +16,8 @@ async function main() {
   }
 
   const migrationsFolder = process.env.DRIZZLE_MIGRATIONS_FOLDER
-    ? path.resolve(process.env.DRIZZLE_MIGRATIONS_FOLDER)
-    : path.resolve(process.cwd(), 'drizzle');
+    ? resolve(process.env.DRIZZLE_MIGRATIONS_FOLDER)
+    : resolve(process.cwd(), 'drizzle');
 
   const pool = new Pool({ connectionString: url, max: 1 });
   const db = drizzle(pool);
