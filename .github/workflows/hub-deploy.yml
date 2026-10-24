@@ -9,7 +9,7 @@ on:
 env:
   # Set HUB_PROJECT_ID in GitHub Actions variables after linking the Hub project.
   HUB_PROJECT_ID: ${{ vars.HUB_PROJECT_ID }}
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/munna-tech-ng/nest-js-backend
 
 jobs:
   build:
