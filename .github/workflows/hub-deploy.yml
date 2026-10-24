@@ -39,16 +39,4 @@ jobs:
       # Hub notify: POST /v1/projects/:id/builds
       # Secrets: HUB_API_URL (e.g. https://hub.example.com), HUB_BUILD_TOKEN (operator PAT with git:write or deploy:run).
       # Alternative: omit this step and rely on workflow_run + projects.image_repository on the Hub project.
-      - name: Notify Hub builds API
-        env:
-          HUB_API_URL: ${{ secrets.HUB_API_URL }}
-          HUB_BUILD_TOKEN: ${{ secrets.HUB_BUILD_TOKEN }}
-        run: |
-          test -n "${HUB_API_URL}"
-          test -n "${HUB_PROJECT_ID}"
-          curl -fsS -X POST \
-            "${HUB_API_URL}/v1/projects/${HUB_PROJECT_ID}/builds" \
-            -H "Authorization: Bearer ${HUB_BUILD_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -H "Idempotency-Key: ${{ github.run_id }}-${{ github.sha }}" \
-            -d "{\"commitSha\":\"${{ github.sha }}\",\"branch\":\"${{ github.ref_name }}\",\"imageRepository\":\"${IMAGE_NAME}\"}"
+      
